@@ -23,8 +23,13 @@ const links = [
     icon: DocumentDuplicateIcon,
   },
   {
-    name: 'Customers',
-    href: '/dashboard/customers',
+    name: 'Produk',
+    href: '/dashboard/produk',
+    icon: UserGroupIcon
+  },
+   {
+    name: 'Laporan Penjualan',
+    href: '/dashboard/laporan',
     icon: UserGroupIcon
   },
 ];
