@@ -23,6 +23,11 @@ const links = [
     icon: DocumentDuplicateIcon,
   },
   {
+    name: 'Transaksi',
+    href: '/dashboard/transaksi',
+    icon: DocumentDuplicateIcon,
+  },
+  {
     name: 'Produk',
     href: '/dashboard/produk',
     icon: UserGroupIcon

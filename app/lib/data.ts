@@ -6,6 +6,9 @@ import {
   InvoicesTable,
   LatestInvoiceRaw,
   Revenue,
+  Produk,
+  Transaksi,
+  Laporan,
 } from './definitions';
 import { formatCurrency } from './utils';
 
@@ -14,7 +17,7 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 export async function fetchRevenue() {
   try {
     // Artificially delay a response for demo purposes.
-    // Don't do this in production :)
+    // Don't do this in produkion :)
 
     // console.log('Fetching revenue data...');
     // await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -214,5 +217,146 @@ export async function fetchFilteredCustomers(query: string) {
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');
+  }
+}
+
+//produk
+export async function fetchProduk() {
+  try {
+    const data = await sql<Produk[]>`
+      SELECT 
+        id, 
+        name, 
+        price, 
+        stock, 
+        created_at, 
+        updated_at
+      FROM produks
+      ORDER BY created_at DESC
+    `;
+    return data;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Gagal mengambil data produk.');
+  }
+}
+
+export async function fetchFilteredProduk(
+  query: string,
+  currentPage: number,
+) {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  try {
+    const products = await sql<Produk[]>`
+      SELECT
+        id,
+        name,
+        price,
+        stock,
+        created_at,
+        updated_at
+      FROM products
+      WHERE
+        name ILIKE ${`%${query}%`} OR
+        price::text ILIKE ${`%${query}%`} OR
+        stock::text ILIKE ${`%${query}%`}
+      ORDER BY created_at DESC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    return products;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch products.');
+  }
+}
+
+export async function fetchProdukById(id: string) {
+  try {
+    const data = await sql<Produk[]>`
+      SELECT 
+        id, 
+        name, 
+        price, 
+        stock, 
+        created_at, 
+        updated_at
+      FROM produks
+      WHERE id = ${id}
+    `;
+    return data[0];
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Gagal mengambil detail produk.');
+  }
+}
+
+export async function fetchProdukPages(query: string) {
+  try {
+    const data = await sql`
+      SELECT COUNT(*)
+      FROM products
+      WHERE
+        name ILIKE ${`%${query}%`} OR
+        price::text ILIKE ${`%${query}%`} OR
+        stock::text ILIKE ${`%${query}%`} OR
+        created_at::text ILIKE ${`%${query}%`} OR
+        updated_at::text ILIKE ${`%${query}%`}
+    `;
+
+    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch total number of products.');
+  }
+}
+
+//transaksi
+export async function fetchTransaksi() {
+  try {
+    const data = await sql<Transaksi[]>`
+      SELECT t.id, t.customer, t.produk_id, t.quantity, t.total_price, t.created_at,
+             p.id AS produk_id, p.name AS produk_name, p.price AS produk_price
+      FROM transaksi t
+      JOIN produks p ON t.produk_id = p.id
+      ORDER BY t.created_at DESC
+    `;
+    return data;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Gagal mengambil data transaksi.');
+  }
+}
+
+//laporan
+export async function fetchLaporan(month: number, year: number) {
+  try {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 1);
+
+    const transaksi = await sql<Transaksi[]>`
+      SELECT t.id, t.customer, t.produk_id, t.quantity, t.total_price, t.created_at,
+             p.id AS produk_id, p.name AS produk_name, p.price AS produk_price
+      FROM transaksi t
+      JOIN produks p ON t.produk_id = p.id
+      WHERE t.created_at >= ${startDate} AND t.created_at < ${endDate}
+      ORDER BY t.created_at DESC
+    `;
+
+    const totalSales = transaksi.reduce((sum, t) => sum + Number(t.totalPrice), 0);
+
+    const laporan: Laporan = {
+      month,
+      year,
+      totalSales,
+      transaksi,
+    };
+
+    return laporan;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Gagal mengambil data laporan.');
   }
 }
