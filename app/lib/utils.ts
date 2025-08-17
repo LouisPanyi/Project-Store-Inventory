@@ -1,9 +1,9 @@
 import { Revenue } from './definitions';
 
 export const formatCurrency = (amount: number) => {
-  return (amount / 100).toLocaleString('en-US', {
+  return amount.toLocaleString('id-ID', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'IDR',
   });
 };
 
@@ -67,3 +67,36 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+//format tanggal
+export function formatDate(date: Date | string) {
+  if (typeof window === "undefined") {
+    console.log("[SERVER] RAW VALUE:", date);
+  } else {
+    console.log("[CLIENT] RAW VALUE:", date);
+  }
+
+  let parsedDate: Date;
+
+  if (date instanceof Date) {
+    parsedDate = date;
+  } else if (typeof date === "string") {
+    const isoString = date.replace(" ", "T").split(".")[0] + "Z";
+    parsedDate = new Date(isoString);
+  } else {
+    return "-";
+  }
+
+  if (isNaN(parsedDate.getTime())) {
+    console.log("INVALID DATE DETECTED");
+    return "-";
+  }
+
+  return parsedDate.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

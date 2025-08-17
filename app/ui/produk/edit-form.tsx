@@ -22,8 +22,8 @@ export default function EditProdukForm({ produk }: { produk: Produk }) {
           </label>
           <div className="relative">
             <input
-              id="nama"
-              name="nama"
+              id="name"
+              name="name"
               type="text"
               defaultValue={produk.name}
               placeholder="Masukkan nama produk"
@@ -41,8 +41,8 @@ export default function EditProdukForm({ produk }: { produk: Produk }) {
           <div className="relative mt-2 rounded-md">
             <div className="relative">
               <input
-                id="harga"
-                name="harga"
+                id="price"
+                name="price"
                 type="number"
                 step="0.01"
                 defaultValue={produk.price}
@@ -61,8 +61,8 @@ export default function EditProdukForm({ produk }: { produk: Produk }) {
           </label>
           <div className="relative">
             <input
-              id="stok"
-              name="stok"
+              id="stock"
+              name="stock"
               type="number"
               defaultValue={produk.stock}
               placeholder="Masukkan jumlah stok"

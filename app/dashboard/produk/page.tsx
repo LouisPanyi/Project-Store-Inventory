@@ -17,7 +17,7 @@ export default async function Page({
 }) {
   const query = searchParams?.query || '';
   const currentPage = Number(searchParams?.page) || 1;
-  const totalPages = await fetchProdukPages(query);
+  const totalPages = await fetchProdukPages(query, currentPage);
 
   return (
     <div className="w-full">
@@ -26,9 +26,9 @@ export default async function Page({
       </div>
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         <Search placeholder="Cari produk..." />
-        <CreateProduk/>
+        <CreateProduk />
       </div>
-      <Suspense key={query + currentPage} fallback={<ProduksTableSkeleton/>}>
+      <Suspense key={query + currentPage} fallback={<ProduksTableSkeleton />}>
         <Table query={query} currentPage={currentPage} />
       </Suspense>
       <div className="mt-5 flex w-full justify-center">

@@ -29,10 +29,10 @@ const ProdukSchema = z.object({
     stock: z.coerce.number().min(0, { message: 'Stok tidak boleh minus' }),
 });
 
-export const UpdateProduk = z.object({
-  name: z.string().min(1, { message: 'Nama produk wajib diisi' }),
-  price: z.coerce.number().positive({ message: 'Harga harus lebih dari 0' }),
-  stock: z.coerce.number().int().nonnegative({ message: 'Stok tidak boleh negatif' }),
+const UpdateProduk = z.object({
+    name: z.string().min(1, { message: 'Nama produk wajib diisi' }),
+    price: z.coerce.number().positive({ message: 'Harga harus lebih dari 0' }),
+    stock: z.coerce.number().int().nonnegative({ message: 'Stok tidak boleh negatif' }),
 });
 
 const TransaksiSchema = z.object({
@@ -194,37 +194,37 @@ export async function createProduk(prevState: StateProduk, formData: FormData): 
 
 // Update produk
 export async function updateProduk(
-  id: string,
-  prevState: StateProduk,
-  formData: FormData
+    id: string,
+    prevState: StateProduk,
+    formData: FormData
 ): Promise<StateProduk> {
-  const validatedFields = UpdateProduk.safeParse({
-    name: formData.get('name'),
-    price: formData.get('price'),
-    stock: formData.get('stock'),
-  });
+    const validatedFields = UpdateProduk.safeParse({
+        name: formData.get('name'),
+        price: formData.get('price'),
+        stock: formData.get('stock'),
+    });
 
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing Fields. Failed to Update Produk.',
-    };
-  }
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Missing Fields. Failed to Update Produk.',
+        };
+    }
 
-  const { name, price, stock } = validatedFields.data;
+    const { name, price, stock } = validatedFields.data;
 
-  try {
-    await sql`
+    try {
+        await sql`
       UPDATE produk
       SET name = ${name}, price = ${price}, stock = ${stock}, updated_at = NOW()
       WHERE id = ${id};
     `;
-  } catch (error) {
-    return { message: 'Database Error: Failed to Update Produk.' };
-  }
+    } catch (error) {
+        return { message: 'Database Error: Failed to Update Produk.' };
+    }
 
-  revalidatePath('/dashboard/produk');
-  redirect('/dashboard/produk');
+    revalidatePath('/dashboard/produk');
+    redirect('/dashboard/produk');
 }
 
 

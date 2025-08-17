@@ -1,6 +1,6 @@
 import Form from '@/app/ui/produk/edit-form';
 import Breadcrumbs from '@/app/ui/produk/breadcrumbs';
-import { fetchProdukById} from '@/app/lib/data';
+import { fetchProdukById } from '@/app/lib/data';
 import { notFound } from 'next/navigation';
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
@@ -9,7 +9,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     const [produk] = await Promise.all([
         fetchProdukById(id),
     ]);
-    
+
     if (!produk) {
         notFound();
     }
@@ -17,7 +17,10 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         <main>
             <Breadcrumbs
                 breadcrumbs={[
-                    { label: 'Produk', href: '/dashboard/produk' },
+                    {
+                        label: 'Produk',
+                        href: '/dashboard/produk'
+                    },
                     {
                         label: 'Edit Produk',
                         href: `/dashboard/produk/${id}/edit`,
@@ -25,7 +28,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
                     },
                 ]}
             />
-            <Form produk={produk}/>
+            <Form produk={produk} />
         </main>
     );
 }

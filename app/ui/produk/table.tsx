@@ -1,5 +1,5 @@
 import { UpdateProduk, DeleteProduk } from '@/app/ui/produk/buttons';
-import { formatCurrency } from '@/app/lib/utils';
+import { formatCurrency, formatDate } from '@/app/lib/utils';
 import { fetchFilteredProduk } from '@/app/lib/data';
 
 export default async function produksTable({
@@ -24,7 +24,9 @@ export default async function produksTable({
                             >
                                 <div className="flex items-center justify-between border-b pb-4">
                                     <div>
-                                        <p className="font-medium">{produk.name}</p>
+                                        <p className="font-medium">
+                                            {produk.name}
+                                        </p>
                                         <p className="text-sm text-gray-500">
                                             Stok: {produk.stock}
                                         </p>
@@ -54,6 +56,12 @@ export default async function produksTable({
                                 <th scope="col" className="px-3 py-5 font-medium">
                                     Stok
                                 </th>
+                                <th scope="col" className="px-3 py-5 font-medium">
+                                    Dibuat
+                                </th>
+                                <th scope="col" className="px-3 py-5 font-medium">
+                                    Terakhir Update
+                                </th>
                                 <th scope="col" className="relative py-3 pl-6 pr-3">
                                     <span className="sr-only">Edit</span>
                                 </th>
@@ -73,6 +81,12 @@ export default async function produksTable({
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-3">
                                         {produk.stock}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-3">
+                                        {formatDate(produk.createdAt)}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-3">
+                                        {formatDate(produk.updatedAt)}
                                     </td>
                                     <td className="whitespace-nowrap py-3 pl-6 pr-3">
                                         <div className="flex justify-end gap-3">

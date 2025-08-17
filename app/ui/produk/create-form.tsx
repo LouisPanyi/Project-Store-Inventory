@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 import { createProduk, StateProduk } from '@/app/lib/actions';
 import { useActionState } from 'react';
+import { Produk } from '@/app/lib/definitions';
 
-export default function FormProduk() {
+export default function FormProduk({ produks }: { produks: Produk[]}) {
   const initialState: StateProduk = { message: null, errors: {} };
   const [state, formAction] = useActionState(createProduk, initialState);
 
@@ -93,7 +94,9 @@ export default function FormProduk() {
         >
           Cancel
         </Link>
-        <Button type="submit">Create Produk</Button>
+        <Button type="submit">
+          Create Produk
+        </Button>
       </div>
     </form>
   );
