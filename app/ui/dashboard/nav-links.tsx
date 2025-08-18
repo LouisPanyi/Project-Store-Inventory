@@ -18,9 +18,9 @@ const links = [
     icon: HomeIcon
   },
   {
-    name: 'Invoices',
-    href: '/dashboard/invoices',
-    icon: DocumentDuplicateIcon,
+    name: 'Produk',
+    href: '/dashboard/produk',
+    icon: UserGroupIcon
   },
   {
     name: 'Transaksi',
@@ -28,11 +28,6 @@ const links = [
     icon: DocumentDuplicateIcon,
   },
   {
-    name: 'Produk',
-    href: '/dashboard/produk',
-    icon: UserGroupIcon
-  },
-   {
     name: 'Laporan Penjualan',
     href: '/dashboard/laporan',
     icon: UserGroupIcon

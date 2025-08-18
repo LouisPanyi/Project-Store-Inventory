@@ -78,91 +78,6 @@ export type StateProduk = {
     };
 };
 
-const CreateInvoice = FormSchema.omit({ id: true, date: true });
-const UpdateInvoice = FormSchema.omit({ id: true, date: true });
-
-export async function createInvoice(prevState: State, formData: FormData) {
-    // Validate form using Zod
-    const validatedFields = CreateInvoice.safeParse({
-        customerId: formData.get('customerId'),
-        amount: formData.get('amount'),
-        status: formData.get('status'),
-    });
-
-    // If form validation fails, return errors early. Otherwise, continue.
-    if (!validatedFields.success) {
-        return {
-            errors: validatedFields.error.flatten().fieldErrors,
-            message: 'Missing Fields. Failed to Create Invoice.',
-        };
-    }
-
-    // Prepare data for insertion into the database
-    const { customerId, amount, status } = validatedFields.data;
-    const amountInCents = amount * 100;
-    const date = new Date().toISOString().split('T')[0];
-
-    // Insert data into the database
-    try {
-        await sql`
-      INSERT INTO invoices (customer_id, amount, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
-    `;
-    } catch (error) {
-        // If a database error occurs, return a more specific error.
-        return {
-            message: 'Database Error: Failed to Create Invoice.',
-        };
-    }
-
-    // Revalidate the cache for the invoices page and redirect the user.
-    revalidatePath('/dashboard/invoices');
-    redirect('/dashboard/invoices');
-}
-
-export async function updateInvoice(
-    id: string,
-    prevState: State,
-    formData: FormData,
-) {
-    const validatedFields = UpdateInvoice.safeParse({
-        customerId: formData.get('customerId'),
-        amount: formData.get('amount'),
-        status: formData.get('status'),
-    });
-
-    if (!validatedFields.success) {
-        return {
-            errors: validatedFields.error.flatten().fieldErrors,
-            message: 'Missing Fields. Failed to Update Invoice.',
-        };
-    }
-
-    const { customerId, amount, status } = validatedFields.data;
-    const amountInCents = amount * 100;
-
-    try {
-        await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-      WHERE id = ${id}
-    `;
-    } catch (error) {
-        return { message: 'Database Error: Failed to Update Invoice.' };
-    }
-
-    revalidatePath('/dashboard/invoices');
-    redirect('/dashboard/invoices');
-}
-
-export async function deleteInvoice(id: string) {
-    throw new Error('Failed to Delete Invoice');
-
-    // Unreachable code block
-    await sql`DELETE FROM invoices WHERE id = ${id}`;
-    revalidatePath('/dashboard/invoices');
-}
-
 // Tambah produk baru
 export async function createProduk(prevState: StateProduk, formData: FormData): Promise<StateProduk> {
     const validatedFields = ProdukSchema.safeParse({
@@ -216,7 +131,7 @@ export async function updateProduk(
     try {
         await sql`
       UPDATE produk
-      SET name = ${name}, price = ${price}, stock = ${stock}, updated_at = NOW()
+      SET name = ${name}, price = ${price}, stock = ${stock}, updatedAt = NOW()
       WHERE id = ${id};
     `;
     } catch (error) {
@@ -230,13 +145,16 @@ export async function updateProduk(
 
 // Hapus produk
 export async function deleteProduk(id: string) {
-    try {
-        await sql`DELETE FROM produks WHERE id = ${id}`;
-    } catch (error) {
-        console.error('Database Error:', error);
-        throw new Error('Gagal menghapus produk.');
-    }
+  try {
+    await sql`
+      DELETE FROM produk WHERE id = ${id};
+    `;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Gagal menghapus produk.");
+  }
 }
+
 
 // Tambah transaksi
 export async function createTransaksi(formData: FormData) {
