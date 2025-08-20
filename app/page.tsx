@@ -2,14 +2,16 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Footer from "./sections/footer";
-import CTA from "./sections/cta";
-import About from "./sections/about";
-import Hero from "./sections/hero";
-import Kategori from "./sections/kategori";
-import Keunggulan from "./sections/keunggulan";
-import Produk from "./sections/produk";
-import Testimoni from "./sections/testimoni";
+import Footer from "../components/ui/sections/footer";
+import CTA from "../components/ui/sections/cta";
+import About from "../components/ui/sections/about";
+import Hero from "../components/ui/sections/hero";
+import Kategori from "../components/ui/sections/kategori";
+import Keunggulan from "../components/ui/sections/keunggulan";
+import Produk from "../components/ui/sections/produk";
+import Testimoni from "../components/ui/sections/testimoni";
+import Link from "next/link";
+
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement | null>(null);
@@ -41,8 +43,8 @@ export default function HomePage() {
       {/* Navbar */}
       <nav
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
-            ? "bg-white shadow-md text-gray-800"
-            : "bg-white text-gray-800"
+          ? "bg-white shadow-md text-gray-800"
+          : "bg-white text-gray-800"
           }`}
       >
 
@@ -62,7 +64,9 @@ export default function HomePage() {
           </div>
 
           {/* Login */}
-          <Button className="ml-4">Login</Button>
+          <Link href="/login">
+            <Button className="ml-4">Login</Button>
+          </Link>
         </div>
       </nav>
 

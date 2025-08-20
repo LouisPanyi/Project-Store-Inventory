@@ -1,6 +1,11 @@
 import '@/app/ui/global.css';
 import { inter } from '@/app/ui/fonts';
- 
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Ratu Rosari Homepage',
+};
+
 export default function RootLayout({
   children,
 }: {
