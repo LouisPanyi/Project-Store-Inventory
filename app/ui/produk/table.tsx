@@ -1,6 +1,8 @@
 import { UpdateProduk, DeleteProduk } from '@/app/ui/produk/buttons';
 import { formatCurrency, formatDate } from '@/app/lib/utils';
 import { fetchFilteredProduk } from '@/app/lib/data';
+import { getStatusLabel } from '@/app/lib/utils';
+
 
 export default async function produksTable({
     query,
@@ -15,7 +17,6 @@ export default async function produksTable({
         <div className="mt-6 flow-root">
             <div className="inline-block min-w-full align-middle">
                 <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
-                    {/* MOBILE VIEW */}
                     <div className="md:hidden">
                         {produks?.map((produk) => (
                             <div
@@ -57,6 +58,9 @@ export default async function produksTable({
                                     Stok
                                 </th>
                                 <th scope="col" className="px-3 py-5 font-medium">
+                                    Status
+                                </th>
+                                <th scope="col" className="px-3 py-5 font-medium">
                                     Dibuat
                                 </th>
                                 <th scope="col" className="px-3 py-5 font-medium">
@@ -81,6 +85,9 @@ export default async function produksTable({
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-3">
                                         {produk.stock}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-3">
+                                        {getStatusLabel(produk.status)}
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-3">
                                         {formatDate(produk.createdAt)}

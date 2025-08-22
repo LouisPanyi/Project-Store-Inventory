@@ -85,6 +85,7 @@ export type Produk = {
   name: string;
   price: number;
   stock: number;
+  status: number;
   createdAt: Date;
   updatedAt: Date;
 };

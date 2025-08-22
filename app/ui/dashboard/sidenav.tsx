@@ -1,4 +1,3 @@
-import Link from "next/link";
 import NavLinks from "@/app/ui/dashboard/nav-links";
 import { PowerIcon } from "@heroicons/react/24/outline";
 import { signOut } from "@/auth";
@@ -6,22 +5,15 @@ import { signOut } from "@/auth";
 export default function SideNav() {
   return (
     <aside className="flex h-full flex-col rounded-r-2xl bg-white shadow-lg border-r border-gray-200">
-      {/* Logo / Brand */}
       <div
         className="mb-8 flex h-20 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-400 px-4 text-white font-bold text-xl shadow-md hover:opacity-90 transition-opacity"
       >
         Ratu Rosari Inventory
       </div>
-
-      {/* Navigation Links */}
       <nav className="flex flex-col gap-2 px-3 flex-1">
         <NavLinks />
       </nav>
-
-      {/* Divider */}
       <div className="mx-3 mb-4 border-t border-gray-200"></div>
-
-      {/* Sign Out Button */}
       <form
         action={async () => {
           "use server";

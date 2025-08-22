@@ -33,6 +33,7 @@ const UpdateProduk = z.object({
     name: z.string().min(1, { message: 'Nama produk wajib diisi' }),
     price: z.coerce.number().positive({ message: 'Harga harus lebih dari 0' }),
     stock: z.coerce.number().int().nonnegative({ message: 'Stok tidak boleh negatif' }),
+    status: z.number().int().min(1).max(3), // 1 = Aktif, 2 = Nonaktif, 3 = Discontinued
 });
 
 const TransaksiSchema = z.object({
@@ -75,6 +76,7 @@ export type StateProduk = {
         name?: string[];
         price?: string[];
         stock?: string[];
+        status?: string[];
     };
 };
 
@@ -104,7 +106,7 @@ export async function createProduk(prevState: StateProduk, formData: FormData): 
         return { message: 'Database error: gagal menambahkan produk' };
     }
 
-    redirect('/dashboard/produk'); // sukses langsung redirect
+    redirect('/dashboard/produk');
 }
 
 // Update produk
@@ -117,6 +119,7 @@ export async function updateProduk(
         name: formData.get('name'),
         price: formData.get('price'),
         stock: formData.get('stock'),
+        status: formData.get('status'),
     });
 
     if (!validatedFields.success) {
@@ -126,12 +129,16 @@ export async function updateProduk(
         };
     }
 
-    const { name, price, stock } = validatedFields.data;
+    const { name, price, stock, status } = validatedFields.data;
+
+    if (stock < 0) {
+        throw new Error('Stok tidak boleh minus.');
+    }
 
     try {
         await sql`
       UPDATE produk
-      SET name = ${name}, price = ${price}, stock = ${stock}, updatedAt = NOW()
+      SET name = ${name}, price = ${price}, stock = ${stock}, status = ${status}, updatedAt = NOW()
       WHERE id = ${id};
     `;
     } catch (error) {
@@ -145,15 +152,20 @@ export async function updateProduk(
 
 // Hapus produk
 export async function deleteProduk(id: string) {
-  try {
-    await sql`
-      DELETE FROM produk WHERE id = ${id};
+    try {
+        await sql`
+      UPDATE produk
+      SET status = 2, updatedAt = NOW()
+      WHERE id = ${id};
     `;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Gagal menghapus produk.");
-  }
+    } catch (error) {
+        console.error('Database Error:', error);
+        throw new Error('Gagal menghapus produk.');
+    }
+
+    revalidatePath('/dashboard/produk');
 }
+
 
 
 // Tambah transaksi

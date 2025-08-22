@@ -2,14 +2,14 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Footer from "../components/ui/sections/footer";
-import CTA from "../components/ui/sections/cta";
-import About from "../components/ui/sections/about";
-import Hero from "../components/ui/sections/hero";
-import Kategori from "../components/ui/sections/kategori";
-import Keunggulan from "../components/ui/sections/keunggulan";
-import Produk from "../components/ui/sections/produk";
-import Testimoni from "../components/ui/sections/testimoni";
+import Footer from "./ui/sections/footer";
+import CTA from "./ui/sections/cta";
+import About from "./ui/sections/about";
+import Hero from "./ui/sections/hero";
+import Kategori from "./ui/sections/kategori";
+import Keunggulan from "./ui/sections/keunggulan";
+import Produk from "./ui/sections/produk";
+import Testimoni from "./ui/sections/testimoni";
 import Link from "next/link";
 
 
@@ -52,7 +52,6 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <h1 className="text-xl font-bold">Toko Ratu Rosari</h1>
 
-          {/* Menu */}
           <div className="hidden md:flex gap-6 font-medium">
             <button onClick={() => scrollTo(heroRef)} className="hover:text-purple-600">Home</button>
             <button onClick={() => scrollTo(kategoriRef)} className="hover:text-purple-600">Koleksi</button>
@@ -63,7 +62,6 @@ export default function HomePage() {
             <button onClick={() => scrollTo(ctaRef)} className="hover:text-purple-600">CTA</button>
           </div>
 
-          {/* Login */}
           <Link href="/login">
             <Button className="ml-4">Login</Button>
           </Link>

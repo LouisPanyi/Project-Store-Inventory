@@ -22,10 +22,10 @@ export default function Testimoni({ sectionRef }: { sectionRef: React.RefObject<
       <h2 className="text-3xl font-bold text-gray-800">Testimoni Umat</h2>
       <div className="mt-10 space-y-6">
         <p className="italic">
-          "Saya sangat puas belanja di Toko Ratu Rosari. Barangnya berkualitas dan pelayanan ramah." – Ibu Maria
+          {'"Saya sangat puas belanja di Toko Ratu Rosari. Barangnya berkualitas dan pelayanan ramah." – Ibu Maria'}
         </p>
         <p className="italic">
-          "Patung Kristus yang saya beli sangat indah dan membuat doa keluarga lebih khusyuk." – Pak Antonius
+         {'"Patung Kristus yang saya beli sangat indah dan membuat doa keluarga lebih khusyuk." – Pak Antonius'}
         </p>
       </div>
     </motion.section>

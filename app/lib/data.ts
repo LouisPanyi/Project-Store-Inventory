@@ -228,10 +228,12 @@ export async function fetchProduk() {
         id, 
         name, 
         price, 
-        stock, 
+        stock,
+        status, 
         createdAt, 
         updatedAt
       FROM produk
+      WHERE status = 1
       ORDER BY createdAt DESC
     `;
     return data;
@@ -254,6 +256,7 @@ export async function fetchFilteredProduk(
         name,
         price,
         stock,
+        status,
         createdat AS "createdAt",
         updatedat AS "updatedAt"
       FROM produk
@@ -279,13 +282,14 @@ export async function fetchProdukById(id: string) {
         id, 
         name, 
         price, 
-        stock, 
-        createdAt, 
-        updatedAt
+        stock,
+        status, 
+        createdat AS "createdAt",
+        updatedat AS "updatedAt"
       FROM produk
       WHERE id = ${id}
     `;
-    return data[0];
+    return data.length > 0 ? data[0] : null;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Gagal mengambil detail produk.');

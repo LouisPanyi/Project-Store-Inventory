@@ -70,11 +70,11 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 
 //format tanggal
 export function formatDate(date: Date | string) {
-  if (typeof window === "undefined") {
-    console.log("[SERVER] RAW VALUE:", date);
-  } else {
-    console.log("[CLIENT] RAW VALUE:", date);
-  }
+  // if (typeof window === "undefined") {
+  //   console.log("[SERVER] RAW VALUE:", date);
+  // } else {
+  //   console.log("[CLIENT] RAW VALUE:", date);
+  // }
 
   let parsedDate: Date;
 
@@ -99,4 +99,13 @@ export function formatDate(date: Date | string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function getStatusLabel(status: number): string {
+    switch (status) {
+        case 1: return "Aktif";
+        case 2: return "Nonaktif";
+        case 3: return "Discontinued";
+        default: return "Unknown";
+    }
 }

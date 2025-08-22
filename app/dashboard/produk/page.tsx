@@ -7,16 +7,20 @@ import { Suspense } from 'react';
 import { ProduksTableSkeleton } from '@/app/ui/skeletons';
 import { fetchProdukPages } from '@/app/lib/data';
 
+interface SearchParams {
+  query?: string;
+  page?: string;
+}
+
 export default async function Page({
   searchParams,
 }: {
-  searchParams?: {
-    query?: string;
-    page?: string;
-  };
+  searchParams: Promise<SearchParams>;
 }) {
-  const query = searchParams?.query || '';
-  const currentPage = Number(searchParams?.page) || 1;
+  const params = await searchParams;
+
+  const query = params?.query ?? '';
+  const currentPage = Number(params?.page) || 1;
   const totalPages = await fetchProdukPages(query, currentPage);
 
   return (
@@ -37,4 +41,3 @@ export default async function Page({
     </div>
   );
 }
-
