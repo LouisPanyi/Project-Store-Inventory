@@ -48,10 +48,8 @@ export default function HomePage() {
           }`}
       >
 
-
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <h1 className="text-xl font-bold">Toko Ratu Rosari</h1>
-
           <div className="hidden md:flex gap-6 font-medium">
             <button onClick={() => scrollTo(heroRef)} className="hover:text-purple-600">Home</button>
             <button onClick={() => scrollTo(kategoriRef)} className="hover:text-purple-600">Koleksi</button>
@@ -59,9 +57,15 @@ export default function HomePage() {
             <button onClick={() => scrollTo(produkRef)} className="hover:text-purple-600">Produk</button>
             <button onClick={() => scrollTo(testimoniRef)} className="hover:text-purple-600">Testimoni</button>
             <button onClick={() => scrollTo(aboutRef)} className="hover:text-purple-600">Tentang</button>
-            <button onClick={() => scrollTo(ctaRef)} className="hover:text-purple-600">CTA</button>
+            
+            {/* Masih sebuah ide */}
+            {/* <Link href="/Catalogue">
+              <button className="hover:text-purple-600">
+                Catalogue
+              </button>
+            </Link> */}
+            
           </div>
-
           <Link href="/login">
             <Button className="ml-4">Login</Button>
           </Link>
@@ -69,7 +73,7 @@ export default function HomePage() {
       </nav>
 
       <div className="pt-24 space-y-32">
-        <Hero sectionRef={heroRef} />
+        <Hero sectionRef={heroRef} scrollTo={() => scrollTo(ctaRef)} />
         <Kategori sectionRef={kategoriRef} />
         <Keunggulan sectionRef={keunggulanRef} />
         <Produk sectionRef={produkRef} />

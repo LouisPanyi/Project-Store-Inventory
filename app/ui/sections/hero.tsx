@@ -9,7 +9,13 @@ const fadeVariant = {
   exit: { opacity: 0, y: -50, transition: { duration: 0.6 } },
 };
 
-export default function Hero({ sectionRef }: { sectionRef: React.RefObject<HTMLDivElement| null> }) {
+export default function Hero({
+  sectionRef,
+  scrollTo,
+}: {
+  sectionRef: React.RefObject<HTMLDivElement | null>;
+  scrollTo: () => void;
+}) {
   return (
     <motion.section
       ref={sectionRef}
@@ -26,7 +32,7 @@ export default function Hero({ sectionRef }: { sectionRef: React.RefObject<HTMLD
       <p className="mt-4 text-lg md:text-xl text-gray-600">
         Barang Rohani Katolik untuk Menguatkan Iman Anda
       </p>
-      <Button className="mt-6 px-6 py-3 text-lg rounded-full">
+      <Button onClick={scrollTo} className="mt-6 px-6 py-3 text-lg rounded-full">
         Belanja Sekarang
       </Button>
     </motion.section>
