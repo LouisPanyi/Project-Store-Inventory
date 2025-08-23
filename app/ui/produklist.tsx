@@ -1,7 +1,7 @@
 export const produkList = [
   {
     name: "Rosario Kayu Zaitun",
-    image: "/produk/rosario.jpg",
+    image: "/produk/Rosario.jpg",
   },
   {
     name: "Patung Bunda Maria",
@@ -9,7 +9,7 @@ export const produkList = [
   },
   {
     name: "Salib Kayu Ukir",
-    image: "/produk/salib.jpg",
+    image: "/produk/Salib.jpg",
   },
   {
     name: "Buku Doa Adalah Sumber Kekuatan",
