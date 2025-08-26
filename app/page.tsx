@@ -40,7 +40,6 @@ export default function HomePage() {
 
   return (
     <main className="relative w-full bg-white">
-      {/* Navbar */}
       <nav
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled
           ? "bg-white shadow-md text-gray-800"
@@ -61,7 +60,7 @@ export default function HomePage() {
             {/* Masih sebuah ide */}
             {/* <Link href="/Catalogue">
               <button className="hover:text-purple-600">
-                Catalogue
+                Katalog
               </button>
             </Link> */}
             

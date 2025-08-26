@@ -30,7 +30,6 @@ export default function LoginFormGoldWhite() {
           Please log in with your admin credentials.
         </p>
 
-        {/* Email */}
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="email">Email</label>
           <div className="relative">
@@ -46,7 +45,6 @@ export default function LoginFormGoldWhite() {
           </div>
         </div>
 
-        {/* Password */}
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="password">Password</label>
           <div className="relative">
@@ -65,12 +63,10 @@ export default function LoginFormGoldWhite() {
 
         <input type="hidden" name="redirectTo" value={callbackUrl} />
 
-        {/* Button */}
         <Button className="mt-6 w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold shadow-lg" aria-disabled={isPending}>
           Log in <ArrowRightIcon className="ml-auto h-5 w-5 text-white" />
         </Button>
 
-        {/* Error */}
         <div className="flex h-8 items-end justify-center space-x-1 mt-2" aria-live="polite" aria-atomic="true">
           {errorMessage && (
             <>

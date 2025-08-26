@@ -30,6 +30,12 @@ export default async function Page({
       </div>
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         <Search placeholder="Cari produk..." />
+        <button
+          // onClick={() => setShowInactive(!showInactive)}
+          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+        >
+          {/* {showInactive ? 'Tampilkan Aktif' : 'Tampilkan Tidak Aktif'} */}
+        </button>
         <CreateProduk />
       </div>
       <Suspense key={query + currentPage} fallback={<ProduksTableSkeleton />}>

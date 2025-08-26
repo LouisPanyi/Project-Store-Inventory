@@ -261,9 +261,11 @@ export async function fetchFilteredProduk(
         updatedat AS "updatedAt"
       FROM produk
       WHERE
-        name ILIKE ${`%${query}%`} OR
-        price::text ILIKE ${`%${query}%`} OR
-        stock::text ILIKE ${`%${query}%`}
+        status = 1 AND (
+          name ILIKE ${`%${query}%`} OR
+          price::text ILIKE ${`%${query}%`} OR
+          stock::text ILIKE ${`%${query}%`}
+        )
       ORDER BY createdAt DESC
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
