@@ -225,7 +225,7 @@ export async function fetchProduk() {
   try {
     const data = await sql<Produk[]>`
       SELECT 
-        id, 
+        produk_id, 
         name, 
         price, 
         stock,
@@ -243,16 +243,46 @@ export async function fetchProduk() {
   }
 }
 
+export async function fetchTransaksiProduk(): Promise<Produk[]> {
+  const rows = await sql<{
+    produk_id: string;
+    name: string;
+    price: number;
+    stock: number;
+    status: number;
+    createdat: Date;
+    updatedat: Date;
+  }[]>`
+    SELECT produk_id, name, price, stock, status, createdAt, updatedAt
+    FROM produk
+  `;
+
+  // Map field agar cocok dengan Produk
+  return rows.map((row) => ({
+    produk_id: row.produk_id,
+    name: row.name,
+    price: row.price,
+    stock: row.stock,
+    status: row.status,
+    createdAt: row.createdat,
+    updatedAt: row.updatedat,
+  }));
+}
+
+
 export async function fetchFilteredProduk(
   query: string,
   currentPage: number,
+  showInactive: boolean
 ) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
+    const statusCondition = showInactive ? sql`status != 1` : sql`status = 1`;
+
     const products = await sql<Produk[]>`
       SELECT
-        id,
+        produk_id,
         name,
         price,
         stock,
@@ -261,7 +291,7 @@ export async function fetchFilteredProduk(
         updatedat AS "updatedAt"
       FROM produk
       WHERE
-        status = 1 AND (
+        ${statusCondition} AND (
           name ILIKE ${`%${query}%`} OR
           price::text ILIKE ${`%${query}%`} OR
           stock::text ILIKE ${`%${query}%`}
@@ -277,11 +307,13 @@ export async function fetchFilteredProduk(
   }
 }
 
-export async function fetchProdukById(id: string) {
+
+
+export async function fetchProdukById(produk_id: string) {
   try {
     const data = await sql<Produk[]>`
       SELECT 
-        id, 
+        produk_id, 
         name, 
         price, 
         stock,
@@ -289,7 +321,7 @@ export async function fetchProdukById(id: string) {
         createdat AS "createdAt",
         updatedat AS "updatedAt"
       FROM produk
-      WHERE id = ${id}
+      WHERE produk_id = ${produk_id}
     `;
     return data.length > 0 ? data[0] : null;
   } catch (error) {
@@ -298,17 +330,21 @@ export async function fetchProdukById(id: string) {
   }
 }
 
-export async function fetchProdukPages(query: string, currentPage: number) {
+export async function fetchProdukPages(query: string, currentPage: number, showInactive: boolean) {
   try {
+    const statusCondition = showInactive ? sql`status != 1` : sql`status = 1`;
+
     const data = await sql`
       SELECT COUNT(*)
       FROM produk
       WHERE
-        name ILIKE ${`%${query}%`} OR
-        price::text ILIKE ${`%${query}%`} OR
-        stock::text ILIKE ${`%${query}%`} OR
-        createdAt::text ILIKE ${`%${query}%`} OR
-        updatedAt::text ILIKE ${`%${query}%`}
+        ${statusCondition} AND (
+          name ILIKE ${`%${query}%`} OR
+          price::text ILIKE ${`%${query}%`} OR
+          stock::text ILIKE ${`%${query}%`} OR
+          createdAt::text ILIKE ${`%${query}%`} OR
+          updatedAt::text ILIKE ${`%${query}%`}
+        )
     `;
 
     const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
@@ -319,15 +355,36 @@ export async function fetchProdukPages(query: string, currentPage: number) {
   }
 }
 
+
 //transaksi
 export async function fetchTransaksi() {
   try {
     const data = await sql<Transaksi[]>`
-      SELECT t.id, t.customer, t.produk_id, t.quantity, t.total_price, t.createdAt,
-             p.id AS produk_id, p.name AS produk_name, p.price AS produk_price
+      SELECT 
+        t.transaksi_id,
+        t.customer,
+        t."totalPrice",
+        t.pay,
+        t.back,
+        t.status,
+        t."createdAt",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'dt_id', dt.dt_id,
+              'produk_id', dt.produk_id,
+              'nama_produk', p.name,
+              'quantity', dt.quantity,
+              'subTotal', (p.price * dt.quantity),
+            )
+          ) FILTER (WHERE dt.dt_id IS NOT NULL), 
+          '[]'
+        ) AS details
       FROM transaksi t
-      JOIN produks p ON t.produk_id = p.id
-      ORDER BY t.createdAt DESC
+      LEFT JOIN detail_transaksi dt ON t.transaksi_id = dt.transaksi_id
+      LEFT JOIN produk p ON dt.produk_id = p.produk_id
+      GROUP BY t.transaksi_id
+      ORDER BY t."createdAt" DESC
     `;
     return data;
   } catch (error) {
@@ -336,33 +393,89 @@ export async function fetchTransaksi() {
   }
 }
 
-//laporan
-export async function fetchLaporan(month: number, year: number) {
-  try {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 1);
 
-    const transaksi = await sql<Transaksi[]>`
-      SELECT t.id, t.customer, t.produk_id, t.quantity, t.total_price, t.createdAt,
-             p.id AS produk_id, p.name AS produk_name, p.price AS produk_price
-      FROM transaksi t
-      JOIN produk p ON t.produk_id = p.id
-      WHERE t.createdAt >= ${startDate} AND t.createdAt < ${endDate}
-      ORDER BY t.createdAt DESC
+export async function fetchFilteredTransaksi(
+  query: string,
+  currentPage: number,
+) {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  try {
+    const transactions = await sql<Transaksi[]>`
+      SELECT
+        transaksi_id,
+        customer,
+        totalprice AS "totalPrice",
+        pay,
+        back,
+        status,
+        createdat AS "createdAt"
+      FROM transaksi
+      WHERE
+          customer ILIKE ${`%${query}%`} OR
+          status ILIKE ${`%${query}%`} OR
+          createdat::text ILIKE ${`%${query}%`} OR
+          totalprice::text ILIKE ${`%${query}%`}
+      ORDER BY createdat DESC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
-    const totalSales = transaksi.reduce((sum, t) => sum + Number(t.totalPrice), 0);
-
-    const laporan: Laporan = {
-      month,
-      year,
-      totalSales,
-      transaksi,
-    };
-
-    return laporan;
+    return transactions;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Gagal mengambil data laporan.');
+    throw new Error('Failed to fetch transaksi.');
   }
 }
+
+
+export async function fetchTransaksiPages(query: string, currentPage: number) {
+  try {
+    const data = await sql`
+      SELECT COUNT(*)
+      FROM transaksi
+      WHERE
+          customer ILIKE ${`%${query}%`} OR
+          status ILIKE ${`%${query}%`} OR
+          createdAt::text ILIKE ${`%${query}%`} OR
+          totalPrice::text ILIKE ${`%${query}%`}
+    `;
+
+    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch total number of transaksi.');
+  }
+}
+
+
+// //laporan
+// export async function fetchLaporan(month: number, year: number) {
+//   try {
+//     const startDate = new Date(year, month - 1, 1);
+//     const endDate = new Date(year, month, 1);
+
+//     const transaksi = await sql<Transaksi[]>`
+//       SELECT t.transaksi_id, t.customer, t.produk_id, t.quantity, t.total_price, t.createdAt,
+//              p.produk_id AS produk_id, p.name AS produk_name, p.price AS produk_price
+//       FROM transaksi t
+//       JOIN produk p ON t.produk_id = p.produk_id
+//       WHERE t.createdAt >= ${startDate} AND t.createdAt < ${endDate}
+//       ORDER BY t.createdAt DESC
+//     `;
+
+//     const totalSales = transaksi.reduce((sum, t) => sum + Number(t.totalPrice), 0);
+
+//     const laporan: Laporan = {
+//       month,
+//       year,
+//       totalSales,
+//       transaksi,
+//     };
+
+//     return laporan;
+//   } catch (error) {
+//     console.error('Database Error:', error);
+//     throw new Error('Gagal mengambil data laporan.');
+//   }
+// }

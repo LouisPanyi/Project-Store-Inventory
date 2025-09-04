@@ -34,8 +34,13 @@ export default function HomePage() {
   }, []);
 
   const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
-    ref.current?.scrollIntoView({ behavior: "smooth" });
+    if (ref.current) {
+      const navbarHeight = 96; // sesuaikan
+      const top = ref.current.offsetTop - navbarHeight;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
   };
+
 
 
   return (
@@ -56,14 +61,14 @@ export default function HomePage() {
             <button onClick={() => scrollTo(produkRef)} className="hover:text-purple-600">Produk</button>
             <button onClick={() => scrollTo(testimoniRef)} className="hover:text-purple-600">Testimoni</button>
             <button onClick={() => scrollTo(aboutRef)} className="hover:text-purple-600">Tentang</button>
-            
+
             {/* Masih sebuah ide */}
             {/* <Link href="/Catalogue">
               <button className="hover:text-purple-600">
                 Katalog
               </button>
             </Link> */}
-            
+
           </div>
           <Link href="/login">
             <Button className="ml-4">Login</Button>

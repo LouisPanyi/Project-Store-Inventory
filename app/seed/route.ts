@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import postgres from 'postgres';
-import { invoices, customers, revenue, users, produk } from '../lib/placeholder-data';
+import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -101,31 +101,54 @@ async function seedRevenue() {
   return insertedRevenue;
 }
 
-async function seedProduks() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+// Produk
+async function seedProduk() {
+  await sql`DROP TABLE IF EXISTS produk CASCADE`;
 
   await sql`
-    CREATE TABLE IF NOT EXISTS produk (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    CREATE TABLE produk (
+      produk_id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       price INT NOT NULL,
       stock INT NOT NULL,
+      status SMALLINT NOT NULL DEFAULT 1, 
       createdAt TIMESTAMP DEFAULT NOW(),
       updatedAt TIMESTAMP DEFAULT NOW()
     );
   `;
+}
 
-  const insertedProduk = await Promise.all(
-    produk.map(
-      (p) => sql`
-        INSERT INTO produk (name, price, stock, createdAt, updatedAt)
-        VALUES (${p.name}, ${p.price}, ${p.stock}, NOW(), NOW())
-        ON CONFLICT DO NOTHING;
-      `,
-    ),
-  );
+// Transaksi
+async function seedTransaksi() {
+  await sql`DROP TABLE IF EXISTS transaksi CASCADE`;
 
-  return insertedProduk;
+  await sql`
+    CREATE TABLE transaksi (
+      transaksi_id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+      customer VARCHAR(255) NOT NULL,
+      totalPrice INT NOT NULL,
+      pay INT NOT NULL,
+      back INT NOT NULL,
+      status VARCHAR(10) NOT NULL,
+      createdAt TIMESTAMP DEFAULT NOW()
+    );
+  `;
+}
+
+// Detail Transaksi
+async function seedDetailTransaksi() {
+  await sql`DROP TABLE IF EXISTS detail_transaksi CASCADE`;
+
+  await sql`
+    CREATE TABLE detail_transaksi (
+      dt_id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+      transaksi_id UUID NOT NULL REFERENCES transaksi(transaksi_id) ON DELETE CASCADE,
+      produk_id UUID NOT NULL REFERENCES produk(produk_id) ON DELETE CASCADE,
+      quantity INT NOT NULL,
+      subtotal INT NOT NULL,
+      createdAt TIMESTAMP DEFAULT NOW()
+    );
+  `;
 }
 
 export async function GET() {
@@ -135,7 +158,9 @@ export async function GET() {
       seedCustomers(),
       seedInvoices(),
       seedRevenue(),
-      seedProduks(),
+      seedProduk(),
+      seedTransaksi(),
+      seedDetailTransaksi(),
     ]);
 
     return Response.json({ message: 'Database seeded successfully' });

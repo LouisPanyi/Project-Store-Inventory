@@ -80,6 +80,18 @@ export type StateProduk = {
     };
 };
 
+export type StateTransaksi = {
+  message: string | null;
+  errors?: {
+    customer?: string[];
+    product_Id?: string[];
+    quantity?: string[];
+    pay?: string[];
+    back?: string[];
+    status?: string[];
+  };
+};
+
 // Tambah produk baru
 export async function createProduk(prevState: StateProduk, formData: FormData): Promise<StateProduk> {
     const validatedFields = ProdukSchema.safeParse({
@@ -150,62 +162,96 @@ export async function updateProduk(
 }
 
 
-// Hapus produk
-export async function deleteProduk(id: string) {
-    try {
-        await sql`
-      UPDATE produk
-      SET status = 2, updatedAt = NOW()
-      WHERE id = ${id};
+// Nonaktifkan produk
+export async function statusProduk(id: string) {
+  try {
+    // Ambil status produk saat ini
+    const result = await sql`
+      SELECT status FROM produk WHERE produk_id = ${id};
     `;
-    } catch (error) {
-        console.error('Database Error:', error);
-        throw new Error('Gagal menghapus produk.');
+
+    if (result.length === 0) {
+      throw new Error('Produk tidak ditemukan.');
     }
 
+    const currentStatus = result[0].status;
+    const newStatus = currentStatus === 1 ? 2 : 1; // toggle
+
+    await sql`
+      UPDATE produk
+      SET status = ${newStatus}, updatedAt = NOW()
+      WHERE produk_id = ${id};
+    `;
+
     revalidatePath('/dashboard/produk');
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Gagal mengganti status Produk.');
+  }
+}
+
+//action untuk ubah fetch filteredproduk dari 1 ke selain 1 untuk menampilkan produk nonaktif
+export async function shownonactive() {
+    
 }
 
 
 
 // Tambah transaksi
-export async function createTransaksi(formData: FormData) {
-    const customer = formData.get('customer') as string;
-    const produkId = parseInt(formData.get('produkId') as string, 10);
-    const quantity = parseInt(formData.get('quantity') as string, 10);
+export async function createTransaksi(
+  state: StateTransaksi,
+  formData: FormData
+): Promise<StateTransaksi> {
+  const customer = formData.get("customer") as string;
+  const bayar = parseFloat(formData.get("bayar") as string) || 0;
 
-    try {
-        // Ambil data produk
-        const [produk] = await sql`
-      SELECT id, price, stock FROM produks WHERE id = ${produkId}
-    `;
+  // Ambil semua produk yang dipilih
+  const produkEntries = [...formData.entries()]
+    .filter(([key]) => key.startsWith("produk_id_"))
+    .map(([key, val]) => ({
+      produkId: val as string,
+      quantity: Number(formData.get(key.replace("produk_id", "quantity")) || 1),
+    }));
 
-        if (!produk) {
-            throw new Error('Produk tidak ditemukan.');
-        }
-        if (produk.stock < quantity) {
-            throw new Error('Stok tidak cukup.');
-        }
+  try {
+    return await sql.begin(async (tx) => {
+      let total = 0;
+      for (const { produkId, quantity } of produkEntries) {
+        const [produk] = await tx`
+          SELECT produk_id, price, stock FROM produk WHERE produk_id = ${produkId} AND status = 1 FOR UPDATE
+        `;
+        if (!produk) throw new Error("Produk tidak ditemukan");
+        if (produk.stock < quantity) throw new Error(`Stok tidak cukup untuk ${produkId}`);
 
-        const totalPrice = Number(produk.price) * quantity;
+        total += Number(produk.price) * quantity;
+      }
 
-        // Buat transaksi
-        await sql`
-      INSERT INTO transaksis (customer, produk_id, quantity, totalPrice, created_at)
-      VALUES (${customer}, ${produkId}, ${quantity}, ${totalPrice}, NOW())
-    `;
+      const kembali = bayar - total;
+      const status = bayar >= total ? "paid" : "pending";
 
-        // Update stok produk
-        await sql`
-      UPDATE produks
-      SET stock = stock - ${quantity}, updated_at = NOW()
-      WHERE id = ${produkId}
-    `;
-    } catch (error) {
-        console.error('Database Error:', error);
-        throw new Error('Gagal membuat transaksi.');
-    }
+      const [trx] = await tx`
+        INSERT INTO transaksi (customer, totalPrice, pay, back, status, createdAt)
+        VALUES (${customer}, ${total}, ${bayar}, ${kembali}, ${status}, NOW())
+        RETURNING transaksi_id
+      `;
+
+      for (const { produkId, quantity } of produkEntries) {
+        const [produk] = await tx`SELECT price FROM produk WHERE produk_id = ${produkId}`;
+        const subTotal = Number(produk.price) * quantity;
+        await tx`
+          INSERT INTO detail_transaksi (transaksi_id, produk_id, quantity, totalPrice)
+          VALUES (${trx.transaksi_id}, ${produkId}, ${quantity}, ${subTotal})
+        `;
+        await tx`UPDATE produk SET stock = stock - ${quantity} WHERE produk_id = ${produkId}`;
+      }
+
+      return { message: "Transaksi berhasil dibuat!", errors: {} };
+    });
+  } catch (err: any) {
+    return { message: null, errors: { status: [err.message] } };
+  }
 }
+
 
 // Hapus transaksi 
 export async function deleteTransaksi(id: string) {

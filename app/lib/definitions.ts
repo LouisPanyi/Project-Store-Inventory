@@ -81,7 +81,7 @@ export type InvoiceForm = {
 };
 
 export type Produk = {
-  id: string;
+  produk_id: string;
   name: string;
   price: number;
   stock: number;
@@ -90,13 +90,36 @@ export type Produk = {
   updatedAt: Date;
 };
 
-export type Transaksi = {
-  id: string;
-  customer: string;
-  productId: string;
-  quantity: number;
-  totalPrice: number;
+export type ProdukBaru = {
+  produk_id: string;
+  name: string;
+  price: number;
+  status: number;
+  image_url: string;
   createdAt: Date;
+  produk: Produk;
+};
+
+export type Transaksi = {
+  transaksi_id: string;
+  dt_id: string;
+  customer: string;
+  totalPrice: number;
+  pay: number;
+  back: number;
+  status: 'pending' | 'paid';
+  createdAt: Date;
+  details: DetailTransaksi[];
+};
+
+export type DetailTransaksi = {
+  dt_id: string;
+  produk_id: string;
+  transaksi_id: string;
+  nama_produk: string;
+  quantity: string;
+  subtotal: number;
+  transaksi: Transaksi;
   produk: Produk;
 };
 

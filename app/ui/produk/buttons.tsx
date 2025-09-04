@@ -1,6 +1,6 @@
 import { PencilIcon, PlusIcon, EyeSlashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { deleteProduk } from '@/app/lib/actions';
+import { statusProduk } from '@/app/lib/actions';
 
 export function CreateProduk() {
   return (
@@ -25,15 +25,35 @@ export function UpdateProduk({ id }: { id: string }) {
   );
 }
 
-export function DeleteProduk({ id }: { id: string }) {
-  const deleteProductWithId = deleteProduk.bind(null, id);
+export function StatusProduk({ id, status }: { id: string; status: number }) {
+  const changeStatusWithId = statusProduk.bind(null, id);
 
   return (
-    <form action={deleteProductWithId}>
-      <button type="submit" className="rounded-md border p-2 hover:bg-gray-100">
-        <span className="sr-only">Delete</span>
-        <EyeIcon className="w-5" />
+    <form action={changeStatusWithId}>
+      <button
+        type="submit"
+        className="rounded-md border p-2 hover:bg-gray-100"
+        title={status === 1 ? 'Nonaktifkan Produk' : 'Aktifkan Produk'}
+      >
+        {status === 1 ? (
+          <EyeIcon className="w-5" />
+        ) : (
+          <EyeSlashIcon className="w-5" />
+        )}
       </button>
     </form>
   );
 }
+
+export function ChangeStatus({ showInactive }: { showInactive: boolean }) {
+  return (
+    <Link
+      href={`?showInactive=${!showInactive}`} // simple toggle
+      className={`w-10 h-10 rounded-lg text-white flex items-center justify-center transition-colors ${showInactive ? 'bg-rose-500 hover:bg-rose-600' : 'bg-blue-500 hover:bg-blue-600'
+        }`}
+    >
+      {showInactive ? <EyeSlashIcon className="w-5" /> : <EyeIcon className="w-5" />}
+    </Link>
+  );
+}
+

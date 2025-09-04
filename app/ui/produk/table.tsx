@@ -1,17 +1,18 @@
-import { UpdateProduk, DeleteProduk } from '@/app/ui/produk/buttons';
+import { UpdateProduk, StatusProduk } from '@/app/ui/produk/buttons';
 import { formatCurrency, formatDate } from '@/app/lib/utils';
 import { fetchFilteredProduk } from '@/app/lib/data';
 import { getStatusLabel } from '@/app/lib/utils';
 
-
 export default async function produksTable({
     query,
     currentPage,
+    showInactive,
 }: {
-    query: string;
-    currentPage: number;
+   query: string;
+  currentPage: number;
+  showInactive: boolean;
 }) {
-    const produks = await fetchFilteredProduk(query, currentPage);
+    const produks = await fetchFilteredProduk(query, currentPage, showInactive);
 
     return (
         <div className="mt-6 flow-root">
@@ -20,7 +21,7 @@ export default async function produksTable({
                     <div className="md:hidden">
                         {produks?.map((produk) => (
                             <div
-                                key={produk.id}
+                                key={produk.produk_id}
                                 className="mb-2 w-full rounded-md bg-white p-4"
                             >
                                 <div className="flex items-center justify-between border-b pb-4">
@@ -37,8 +38,8 @@ export default async function produksTable({
                                     </p>
                                 </div>
                                 <div className="flex w-full items-center justify-end pt-4 gap-2">
-                                    <UpdateProduk id={produk.id} />
-                                    <DeleteProduk id={produk.id} />
+                                    <UpdateProduk id={produk.produk_id} />
+                                    <StatusProduk id={produk.produk_id} status={produk.status} />
                                 </div>
                             </div>
                         ))}
@@ -74,7 +75,7 @@ export default async function produksTable({
                         <tbody className="bg-white">
                             {produks?.map((produk) => (
                                 <tr
-                                    key={produk.id}
+                                    key={produk.produk_id}
                                     className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                                 >
                                     <td className="whitespace-nowrap py-3 pl-6 pr-3">
@@ -97,8 +98,8 @@ export default async function produksTable({
                                     </td>
                                     <td className="whitespace-nowrap py-3 pl-6 pr-3">
                                         <div className="flex justify-end gap-3">
-                                            <UpdateProduk id={produk.id} />
-                                            <DeleteProduk id={produk.id} />
+                                            <UpdateProduk id={produk.produk_id} />
+                                            <StatusProduk id={produk.produk_id} status={produk.status}/>
                                         </div>
                                     </td>
                                 </tr>

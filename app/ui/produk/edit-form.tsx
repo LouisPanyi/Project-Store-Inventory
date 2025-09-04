@@ -9,7 +9,7 @@ import { TagIcon, CurrencyDollarIcon, ArchiveBoxIcon } from '@heroicons/react/24
 
 export default function EditProdukForm({ produk }: { produk: Produk }) {
   const initialState: StateProduk = { message: null, errors: {} };
-  const updateProdukWithId = updateProduk.bind(null, produk.id);
+  const updateProdukWithId = updateProduk.bind(null, produk.produk_id);
   const [state, formAction] = useActionState(updateProdukWithId, initialState);
 
   return (

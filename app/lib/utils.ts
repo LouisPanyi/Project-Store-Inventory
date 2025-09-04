@@ -102,10 +102,32 @@ export function formatDate(date: Date | string) {
 }
 
 export function getStatusLabel(status: number): string {
-    switch (status) {
-        case 1: return "Aktif";
-        case 2: return "Nonaktif";
-        case 3: return "Discontinued";
-        default: return "Unknown";
-    }
+  switch (status) {
+    case 1: return "Aktif";
+    case 2: return "Nonaktif";
+    case 3: return "Discontinued";
+    default: return "Unknown";
+  }
+}
+
+type StatusConfig = {
+  label: string;
+  className: string;
+};
+
+export function getStatusTransaksi(status: string | number): StatusConfig {
+  const key = String(status ?? "")
+    .trim()
+    .toLowerCase();
+
+  const mapping: Record<string, StatusConfig> = {
+    paid: { label: "Paid", className: "bg-green-100 text-green-800" },
+    unpaid: { label: "Unpaid", className: "bg-red-100 text-red-800" },
+    pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+    cancelled: { label: "Cancelled", className: "bg-gray-100 text-gray-800" },
+  };
+
+  return (
+    mapping[key] || { label: "Unknown", className: "bg-gray-100 text-gray-800" }
+  );
 }
