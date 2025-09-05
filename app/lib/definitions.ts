@@ -127,5 +127,9 @@ export type Laporan = {
   month: number;
   year: number;
   totalSales: number;
+  jumlahTransaksi: number;
+  rataRata: number;
+  paidCount: number;
+  pendingCount: number;
   transaksi: Transaksi[];
 };

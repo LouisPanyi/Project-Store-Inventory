@@ -8,8 +8,6 @@ import {
   Revenue,
   Produk,
   Transaksi,
-  Laporan,
-  DetailTransaksi,
 } from './definitions';
 import { formatCurrency } from './utils';
 

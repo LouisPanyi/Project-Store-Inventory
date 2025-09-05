@@ -1,6 +1,5 @@
 import { formatCurrency, formatDate, getStatusTransaksi } from '@/app/lib/utils';
 import { fetchFilteredTransaksi } from '@/app/lib/data';
-import { getStatusLabel } from '@/app/lib/utils';
 import { DetailTransaksi } from './buttons';
 
 export default async function TransaksiTable({
