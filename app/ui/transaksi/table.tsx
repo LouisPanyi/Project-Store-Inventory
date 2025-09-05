@@ -1,7 +1,7 @@
 import { formatCurrency, formatDate, getStatusTransaksi } from '@/app/lib/utils';
 import { fetchFilteredTransaksi } from '@/app/lib/data';
 import { getStatusLabel } from '@/app/lib/utils';
-import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { DetailTransaksi } from './buttons';
 
 export default async function TransaksiTable({
   query,
@@ -72,7 +72,7 @@ export default async function TransaksiTable({
                   <td className="whitespace-nowrap px-3 py-3">{formatDate(t.createdAt)}</td>
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <div className="flex justify-end gap-3">
-
+                      <DetailTransaksi transaksiId={t.transaksi_id} />
                     </div>
                   </td>
                 </tr>

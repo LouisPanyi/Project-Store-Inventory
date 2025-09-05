@@ -9,6 +9,7 @@ import {
   Produk,
   Transaksi,
   Laporan,
+  DetailTransaksi,
 } from './definitions';
 import { formatCurrency } from './utils';
 
@@ -448,34 +449,62 @@ export async function fetchTransaksiPages(query: string, currentPage: number) {
   }
 }
 
+export async function getDetailTransaksi(id: string) {
+  const [trx] = await sql`
+    SELECT transaksi_id, customer, totalprice, pay, back, status, createdat
+    FROM transaksi
+    WHERE transaksi_id = ${id}
+  `;
 
-// //laporan
-// export async function fetchLaporan(month: number, year: number) {
-//   try {
-//     const startDate = new Date(year, month - 1, 1);
-//     const endDate = new Date(year, month, 1);
+  const items = await sql`
+    SELECT d.quantity, d.subtotal, p.name
+    FROM detail_transaksi d
+    JOIN produk p ON d.produk_id = p.produk_id
+    WHERE d.transaksi_id = ${id}
+  `;
 
-//     const transaksi = await sql<Transaksi[]>`
-//       SELECT t.transaksi_id, t.customer, t.produk_id, t.quantity, t.total_price, t.createdAt,
-//              p.produk_id AS produk_id, p.name AS produk_name, p.price AS produk_price
-//       FROM transaksi t
-//       JOIN produk p ON t.produk_id = p.produk_id
-//       WHERE t.createdAt >= ${startDate} AND t.createdAt < ${endDate}
-//       ORDER BY t.createdAt DESC
-//     `;
+  return {
+    ...trx,
+    items,
+  };
+}
 
-//     const totalSales = transaksi.reduce((sum, t) => sum + Number(t.totalPrice), 0);
+//laporan
+export async function fetchLaporan(month: number, year: number) {
+  try {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 1);
 
-//     const laporan: Laporan = {
-//       month,
-//       year,
-//       totalSales,
-//       transaksi,
-//     };
+    // Ambil transaksi bulan tersebut
+    const transaksiList = await sql<Transaksi[]>`
+      SELECT transaksi_id, customer, totalPrice, pay, back, status, createdAt
+      FROM transaksi
+      WHERE createdAt >= ${startDate} AND createdAt < ${endDate}
+      ORDER BY createdAt DESC
+    `;
 
-//     return laporan;
-//   } catch (error) {
-//     console.error('Database Error:', error);
-//     throw new Error('Gagal mengambil data laporan.');
-//   }
-// }
+    const totalSales = transaksiList
+      .filter((trx) => trx.status === 'paid')
+      .reduce((sum, trx) => sum + Number(trx.totalPrice), 0);
+
+    const jumlahTransaksi = transaksiList.length;
+    const rataRata = jumlahTransaksi ? totalSales / jumlahTransaksi : 0;
+
+    const paidCount = transaksiList.filter((trx) => trx.status === 'paid').length;
+    const pendingCount = transaksiList.filter((trx) => trx.status === 'pending').length;
+
+    return {
+      month,
+      year,
+      totalSales,
+      jumlahTransaksi,
+      rataRata,
+      paidCount,
+      pendingCount,
+      transaksi: transaksiList,
+    };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Gagal mengambil data laporan.');
+  }
+}

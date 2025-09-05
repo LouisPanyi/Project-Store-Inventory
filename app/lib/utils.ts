@@ -69,26 +69,21 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 };
 
 //format tanggal
-export function formatDate(date: Date | string) {
-  // if (typeof window === "undefined") {
-  //   console.log("[SERVER] RAW VALUE:", date);
-  // } else {
-  //   console.log("[CLIENT] RAW VALUE:", date);
-  // }
+export function formatDate(date: Date | string | null | undefined) {
+  if (!date) return "-";
 
   let parsedDate: Date;
 
   if (date instanceof Date) {
     parsedDate = date;
   } else if (typeof date === "string") {
-    const isoString = date.replace(" ", "T").split(".")[0] + "Z";
-    parsedDate = new Date(isoString);
+    parsedDate = new Date(date); // string ISO langsung bisa
   } else {
     return "-";
   }
 
   if (isNaN(parsedDate.getTime())) {
-    console.log("INVALID DATE DETECTED");
+    console.log("❌ INVALID DATE:", date);
     return "-";
   }
 
@@ -100,6 +95,25 @@ export function formatDate(date: Date | string) {
     minute: "2-digit",
   });
 }
+
+
+
+// app/lib/utils.ts
+export function formatDate2(dateString: string) {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+
+  // Format: 2023-08-02 08:46:36 → 02/08/2023 08:46:36
+  return date.toLocaleString("id-ID", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 
 export function getStatusLabel(status: number): string {
   switch (status) {

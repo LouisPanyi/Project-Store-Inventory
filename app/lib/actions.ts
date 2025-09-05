@@ -81,15 +81,15 @@ export type StateProduk = {
 };
 
 export type StateTransaksi = {
-  message: string | null;
-  errors?: {
-    customer?: string[];
-    product_Id?: string[];
-    quantity?: string[];
-    pay?: string[];
-    back?: string[];
-    status?: string[];
-  };
+    message: string | null;
+    errors?: {
+        customer?: string[];
+        product_Id?: string[];
+        quantity?: string[];
+        pay?: string[];
+        back?: string[];
+        status?: string[];
+    };
 };
 
 // Tambah produk baru
@@ -164,38 +164,31 @@ export async function updateProduk(
 
 // Nonaktifkan produk
 export async function statusProduk(id: string) {
-  try {
-    // Ambil status produk saat ini
-    const result = await sql`
+    try {
+        // Ambil status produk saat ini
+        const result = await sql`
       SELECT status FROM produk WHERE produk_id = ${id};
     `;
 
-    if (result.length === 0) {
-      throw new Error('Produk tidak ditemukan.');
-    }
+        if (result.length === 0) {
+            throw new Error('Produk tidak ditemukan.');
+        }
 
-    const currentStatus = result[0].status;
-    const newStatus = currentStatus === 1 ? 2 : 1; // toggle
+        const currentStatus = result[0].status;
+        const newStatus = currentStatus === 1 ? 2 : 1; // toggle
 
-    await sql`
+        await sql`
       UPDATE produk
       SET status = ${newStatus}, updatedAt = NOW()
       WHERE produk_id = ${id};
     `;
 
-    revalidatePath('/dashboard/produk');
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Gagal mengganti status Produk.');
-  }
+        revalidatePath('/dashboard/produk');
+    } catch (error) {
+        console.error('Database Error:', error);
+        throw new Error('Gagal mengganti status Produk.');
+    }
 }
-
-//action untuk ubah fetch filteredproduk dari 1 ke selain 1 untuk menampilkan produk nonaktif
-export async function shownonactive() {
-    
-}
-
-
 
 // Tambah transaksi
 export async function createTransaksi(
@@ -203,9 +196,8 @@ export async function createTransaksi(
   formData: FormData
 ): Promise<StateTransaksi> {
   const customer = formData.get("customer") as string;
-  const bayar = parseFloat(formData.get("bayar") as string) || 0;
+  const pay = parseFloat(formData.get("pay") as string) || 0;
 
-  // Ambil semua produk yang dipilih
   const produkEntries = [...formData.entries()]
     .filter(([key]) => key.startsWith("produk_id_"))
     .map(([key, val]) => ({
@@ -214,7 +206,7 @@ export async function createTransaksi(
     }));
 
   try {
-    return await sql.begin(async (tx) => {
+    await sql.begin(async (tx) => {
       let total = 0;
       for (const { produkId, quantity } of produkEntries) {
         const [produk] = await tx`
@@ -226,12 +218,12 @@ export async function createTransaksi(
         total += Number(produk.price) * quantity;
       }
 
-      const kembali = bayar - total;
-      const status = bayar >= total ? "paid" : "pending";
+      const back = pay - total;
+      const status = pay >= total ? "paid" : "pending";
 
       const [trx] = await tx`
-        INSERT INTO transaksi (customer, totalPrice, pay, back, status, createdAt)
-        VALUES (${customer}, ${total}, ${bayar}, ${kembali}, ${status}, NOW())
+        INSERT INTO transaksi (customer, totalPrice, pay, back, status)
+        VALUES (${customer}, ${total}, ${pay}, ${back}, ${status})
         RETURNING transaksi_id
       `;
 
@@ -239,18 +231,21 @@ export async function createTransaksi(
         const [produk] = await tx`SELECT price FROM produk WHERE produk_id = ${produkId}`;
         const subTotal = Number(produk.price) * quantity;
         await tx`
-          INSERT INTO detail_transaksi (transaksi_id, produk_id, quantity, totalPrice)
+          INSERT INTO detail_transaksi (transaksi_id, produk_id, quantity, subtotal)
           VALUES (${trx.transaksi_id}, ${produkId}, ${quantity}, ${subTotal})
         `;
         await tx`UPDATE produk SET stock = stock - ${quantity} WHERE produk_id = ${produkId}`;
       }
-
-      return { message: "Transaksi berhasil dibuat!", errors: {} };
     });
+
+    // ✅ hanya dipanggil setelah transaksi sukses
+    revalidatePath("/dashboard/transaksi");
+    redirect("/dashboard/transaksi");
   } catch (err: any) {
     return { message: null, errors: { status: [err.message] } };
   }
 }
+
 
 
 // Hapus transaksi 

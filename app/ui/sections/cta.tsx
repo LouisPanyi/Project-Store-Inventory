@@ -24,7 +24,7 @@ export default function CTA({ sectionRef }: { sectionRef: React.RefObject<HTMLDi
       <h2 className="text-3xl font-bold text-gray-800">🙏 Temukan Perlengkapan Rohani Anda Hari Ini</h2>
       <div className="mt-6 flex gap-4 justify-center">
         <a
-          href="https://wa.me/6281247741735?text=Halo%20Toko%20Ratu%20Rosari,%20saya%20ingin%20bertanya."
+          href="https://wa.me/6281345106916?text=Halo%20Toko%20Ratu%20Rosari,%20saya%20ingin%20bertanya."
           target="_blank"
           rel="noopener noreferrer"
         >

@@ -17,6 +17,7 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
   const [pay, setPay] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
   const [back, setBack] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Hitung total harga
   useEffect(() => {
@@ -72,16 +73,22 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
                 required
               >
                 <option value="">-- Pilih Produk --</option>
-                {produkList.map((p) => (
-                  <option key={p.produk_id} value={p.produk_id}>
-                    {p.name} (stok: {p.stock})
-                  </option>
-                ))}
+                {produkList
+                  .filter((p) =>
+                    // produk hanya ditampilkan jika belum dipilih di row lain
+                    !rows.some((r, rIdx) => rIdx !== idx && r.produkId === p.produk_id)
+                  )
+                  .map((p) => (
+                    <option key={p.produk_id} value={p.produk_id}>
+                      {p.name} (stok: {p.stock})
+                    </option>
+                  ))}
               </select>
 
               {/* Quantity */}
               <input
                 type="number"
+                name={`quantity_${idx}`}
                 min={1}
                 value={row.quantity}
                 onChange={(e) => {
@@ -125,33 +132,32 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
         <h2 className="text-lg font-semibold mb-4">Pembayaran</h2>
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <label className="w-full md:w-1/3 font-medium">Total Harga</label>
-          <input
-            type="number"
-            name="totalPrice"
-            value={totalPrice}
-            readOnly
-            className="w-full md:w-2/3 rounded-md border border-gray-300 bg-gray-100 py-2 pl-3 text-sm"
-          />
+          <span className="w-full md:w-2/3 py-2 pl-3 text-sm rounded-md bg-gray-50 border border-gray-200">
+            Rp {totalPrice.toLocaleString()}
+          </span>
         </div>
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <label className="w-full md:w-1/3 font-medium">Bayar</label>
-          <input
-            type="number"
-            name="pay"
-            value={pay}
-            onChange={(e) => setPay(Number(e.target.value))}
-            className="w-full md:w-2/3 rounded-md border border-gray-300 py-2 pl-3 text-sm focus:ring-2 focus:ring-indigo-500"
-          />
+
+          <div className="relative w-full md:w-2/3">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">
+              Rp
+            </span>
+            <input
+              type="number"
+              name="pay"
+              value={pay}
+              onChange={(e) => setPay(Number(e.target.value))}
+              className="w-full rounded-md border border-gray-300 py-2 pl-8 text-sm focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
+
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <label className="w-full md:w-1/3 font-medium">Kembalian</label>
-          <input
-            type="number"
-            name="back"
-            value={back >= 0 ? back : ""}
-            readOnly
-            className="w-full md:w-2/3 rounded-md border border-gray-300 bg-gray-100 py-2 pl-3 text-sm"
-          />
+          <span className="w-full md:w-2/3 py-2 pl-3 text-sm rounded-md bg-gray-50 border border-gray-200">
+            {back >= 0 ? `Rp ${back.toLocaleString()}` : "-"}
+          </span>
         </div>
       </div>
 

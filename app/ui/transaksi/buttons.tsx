@@ -1,5 +1,9 @@
-import { PencilIcon, PlusIcon, EyeSlashIcon, EyeIcon } from '@heroicons/react/24/outline';
+"use client";
+
+import { ExclamationCircleIcon, PlusIcon} from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { useState } from "react";
+import DtPopup from "./dt-popup";
 
 export function CreateTransaksi() {
   return (
@@ -9,7 +13,25 @@ export function CreateTransaksi() {
     >
       <span className="hidden md:block">Tambah Transaksi</span>{' '}
       <PlusIcon className="h-5 md:ml-4" />
-    </Link>
-    
+    </Link> 
+  );
+}
+
+export function DetailTransaksi({ transaksiId }: { transaksiId: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="rounded-md border p-2 hover:bg-gray-100"
+      >
+        <ExclamationCircleIcon className="w-5" />
+      </button>
+
+      {open && (
+        <DtPopup transaksiId={transaksiId} onClose={() => setOpen(false)} />
+      )}
+    </>
   );
 }
