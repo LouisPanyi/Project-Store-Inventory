@@ -133,3 +133,21 @@ export type Laporan = {
   pendingCount: number;
   transaksi: Transaksi[];
 };
+
+export type TransaksiItem = {
+  name: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+};
+
+export type TransaksiDetail = {
+  transaksi_id: string;
+  date: string;
+  customer: string;
+  status: string;
+  items: TransaksiItem[];
+  totalPrice: number;
+  pay: number;
+  back: number;
+};

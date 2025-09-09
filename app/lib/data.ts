@@ -427,7 +427,7 @@ export async function fetchFilteredTransaksi(
 }
 
 
-export async function fetchTransaksiPages(query: string, currentPage: number) {
+export async function fetchTransaksiPages(query: string) {
   try {
     const data = await sql`
       SELECT COUNT(*)
@@ -470,36 +470,100 @@ export async function getDetailTransaksi(id: string) {
 //laporan
 export async function fetchLaporan(month: number, year: number) {
   try {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 1);
+    // Validasi input
+    if (month < 1 || month > 12) {
+      throw new Error('Invalid month. Must be between 1 and 12.');
+    }
+    
+    if (year < 1900 || year > 2100) {
+      throw new Error('Invalid year.');
+    }
 
-    // Ambil transaksi bulan tersebut
-    const transaksiList = await sql<Transaksi[]>`
-      SELECT transaksi_id, customer, totalPrice, pay, back, status, createdAt
-      FROM transaksi
-      WHERE createdAt >= ${startDate} AND createdAt < ${endDate}
-      ORDER BY createdAt DESC
+    const result = await sql`
+      SELECT
+        t.transaksi_id,
+        t.customer,
+        t.totalprice as "totalPrice",
+        t.pay,
+        t.back,
+        t.status,
+        t.createdat as "createdAt",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'dt_id', dt.dt_id,
+              'produk_id', dt.produk_id,
+              'transaksi_id', dt.transaksi_id,
+              'nama_produk', p.name,
+              'quantity', dt.quantity,
+              'subtotal', dt.subtotal
+            ) ORDER BY p.name
+          ) FILTER (WHERE dt.dt_id IS NOT NULL),
+          '[]'::json
+        ) AS details
+      FROM transaksi t
+      LEFT JOIN detail_transaksi dt ON t.transaksi_id = dt.transaksi_id
+      LEFT JOIN produk p ON dt.produk_id = p.produk_id
+      WHERE 
+        EXTRACT(MONTH FROM t.createdAt) = ${month}
+        AND EXTRACT(YEAR FROM t.createdAt) = ${year}
+        AND t.status = 'paid'  -- Hanya transaksi yang sudah dibayar
+      GROUP BY t.transaksi_id
+      ORDER BY t.createdAt DESC
     `;
 
-    const totalSales = transaksiList
-      .filter((trx) => trx.status === 'paid')
-      .reduce((sum, trx) => sum + Number(trx.totalPrice), 0);
+    const transaksi: Transaksi[] = result.map((row: any) => ({
+      transaksi_id: row.transaksi_id,
+      dt_id: "",
+      customer: row.customer,
+      totalPrice: Number(row.totalPrice || 0),
+      pay: Number(row.pay || 0),
+      back: Number(row.back || 0),
+      status: row.status,
+      createdAt: new Date(row.createdAt),
+      details: Array.isArray(row.details) ? row.details.map((d: any) => ({
+        dt_id: d.dt_id,
+        produk_id: d.produk_id,
+        transaksi_id: d.transaksi_id,
+        nama_produk: d.nama_produk,
+        quantity: d.quantity.toString(),
+        subtotal: Number(d.subtotal),
+        transaksi: {} as Transaksi,
+        produk: {} as Produk
+      })) : [],
+    }));
 
-    const jumlahTransaksi = transaksiList.length;
-    const rataRata = jumlahTransaksi ? totalSales / jumlahTransaksi : 0;
+    // Hitung statistik
+    const totalPendapatan = transaksi.reduce((sum, t) => sum + t.totalPrice, 0);
+    const totalTransaksi = transaksi.length;
+    const rataRataPenjualan = totalTransaksi > 0 ? totalPendapatan / totalTransaksi : 0;
+    
+    // Hitung produk terlaris
+    const produkStats = new Map<string, { nama: string; quantity: number; revenue: number }>();
+    
+    transaksi.forEach(t => {
+      t.details.forEach(d => {
+        const existing = produkStats.get(d.produk_id) || { 
+          nama: d.nama_produk, 
+          quantity: 0, 
+          revenue: 0 
+        };
+        existing.quantity += Number(d.quantity);
+        existing.revenue += d.subtotal;
+        produkStats.set(d.produk_id, existing);
+      });
+    });
+    
+    const produkTerlaris = Array.from(produkStats.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
 
-    const paidCount = transaksiList.filter((trx) => trx.status === 'paid').length;
-    const pendingCount = transaksiList.filter((trx) => trx.status === 'pending').length;
-
-    return {
-      month,
-      year,
-      totalSales,
-      jumlahTransaksi,
-      rataRata,
-      paidCount,
-      pendingCount,
-      transaksi: transaksiList,
+    return { 
+      transaksi, 
+      totalPendapatan, 
+      totalTransaksi,
+      rataRataPenjualan,
+      produkTerlaris
     };
   } catch (error) {
     console.error('Database Error:', error);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/app/ui/button';
 import { createTransaksi, StateTransaksi } from '@/app/lib/actions';
@@ -10,6 +11,7 @@ type Produk = { produk_id: string; name: string; price: number; stock: number };
 type ProdukRow = { produkId: string; quantity: number };
 
 export default function CreateTransaksiForm({ produkList }: { produkList: Produk[] }) {
+  const router = useRouter();
   const initialState: StateTransaksi = { message: null, errors: {} };
   const [state, formAction] = useActionState(createTransaksi, initialState);
 
@@ -17,7 +19,13 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
   const [pay, setPay] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
   const [back, setBack] = useState(0);
-  const [isFocused, setIsFocused] = useState(false);
+
+  // Redirect setelah sukses
+  useEffect(() => {
+    if (state.success) {
+      router.push('/dashboard/transaksi');
+    }
+  }, [state.success, router]);
 
   // Hitung total harga
   useEffect(() => {
@@ -49,6 +57,10 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
           />
           <UserIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
         </div>
+        {/* Error */}
+        {state.errors?.customer?.[0] && (
+          <p className="text-red-500 text-sm mt-1">{state.errors.customer[0]}</p>
+        )}
       </div>
 
       {/* Produk List */}
@@ -59,8 +71,10 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
           const subTotal = produk ? produk.price * row.quantity : 0;
 
           return (
-            <div key={idx} className="flex flex-col md:flex-row md:items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-              {/* Produk Select */}
+            <div
+              key={idx}
+              className="flex flex-col md:flex-row md:items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg"
+            >
               <select
                 name={`produk_id_${idx}`}
                 value={row.produkId}
@@ -74,9 +88,11 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
               >
                 <option value="">-- Pilih Produk --</option>
                 {produkList
-                  .filter((p) =>
-                    // produk hanya ditampilkan jika belum dipilih di row lain
-                    !rows.some((r, rIdx) => rIdx !== idx && r.produkId === p.produk_id)
+                  .filter(
+                    (p) =>
+                      !rows.some(
+                        (r, rIdx) => rIdx !== idx && r.produkId === p.produk_id
+                      )
                   )
                   .map((p) => (
                     <option key={p.produk_id} value={p.produk_id}>
@@ -85,7 +101,6 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
                   ))}
               </select>
 
-              {/* Quantity */}
               <input
                 type="number"
                 name={`quantity_${idx}`}
@@ -100,12 +115,10 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
                 required
               />
 
-              {/* Subtotal */}
               <span className="text-sm font-medium text-gray-700">
                 Subtotal: Rp {subTotal.toLocaleString()}
               </span>
 
-              {/* Remove Button */}
               {idx > 0 && (
                 <button
                   type="button"
@@ -118,27 +131,36 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
             </div>
           );
         })}
+        {state.errors?.product_Id?.[0] && (
+          <p className="text-red-500 text-sm mt-1">{state.errors.product_Id[0]}</p>
+        )}
         <button
           type="button"
           onClick={addRow}
           className="flex items-center gap-1 text-indigo-600 hover:underline mt-2"
         >
-          <PlusIcon className="h-4 w-4" /> Tambah Produk
+          <PlusIcon className="h-4 w-4" />
+          Tambah Produk
         </button>
       </div>
 
       {/* Payment Info */}
       <div className="rounded-lg border bg-white shadow-sm p-6 space-y-3">
-        <h2 className="text-lg font-semibold mb-4">Pembayaran</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          Pembayaran
+        </h2>
         <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <label className="w-full md:w-1/3 font-medium">Total Harga</label>
+          <label className="w-full md:w-1/3 font-medium">
+            Total Harga
+          </label>
           <span className="w-full md:w-2/3 py-2 pl-3 text-sm rounded-md bg-gray-50 border border-gray-200">
             Rp {totalPrice.toLocaleString()}
           </span>
         </div>
         <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <label className="w-full md:w-1/3 font-medium">Bayar</label>
-
+          <label className="w-full md:w-1/3 font-medium">
+            Bayar
+          </label>
           <div className="relative w-full md:w-2/3">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">
               Rp
@@ -151,10 +173,17 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
               className="w-full rounded-md border border-gray-300 py-2 pl-8 text-sm focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+          {state.errors?.pay?.[0] && (
+            <p className="text-red-500 text-sm mt-1">
+              {state.errors.pay[0]}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <label className="w-full md:w-1/3 font-medium">Kembalian</label>
+          <label className="w-full md:w-1/3 font-medium">
+            Kembalian
+          </label>
           <span className="w-full md:w-2/3 py-2 pl-3 text-sm rounded-md bg-gray-50 border border-gray-200">
             {back >= 0 ? `Rp ${back.toLocaleString()}` : "-"}
           </span>
@@ -169,7 +198,9 @@ export default function CreateTransaksiForm({ produkList }: { produkList: Produk
         >
           Cancel
         </Link>
-        <Button type="submit">Create Transaksi</Button>
+        <Button type="submit">
+          Create Transaksi
+        </Button>
       </div>
     </form>
   );

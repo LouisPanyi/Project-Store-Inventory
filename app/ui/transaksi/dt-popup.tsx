@@ -4,6 +4,7 @@ import { formatDate } from "@/app/lib/utils";
 import { Dialog } from "@headlessui/react";
 import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
+import { TransaksiDetail, TransaksiItem } from "@/app/lib/definitions";
 
 export default function DtPopup({
     transaksiId,
@@ -12,7 +13,7 @@ export default function DtPopup({
     transaksiId: string;
     onClose: () => void;
 }) {
-    const [detail, setDetail] = useState<any>(null);
+    const [detail, setDetail] = useState<TransaksiDetail | null>(null);
 
     useEffect(() => {
         fetch(`/api/transaksi/${transaksiId}`)
@@ -66,7 +67,7 @@ export default function DtPopup({
 
                             {/* Daftar item */}
                             <div className="text-left">
-                                {detail.items.map((item: any, i: number) => (
+                                {detail.items.map((item: TransaksiItem, i: number) => (
                                     <div key={i} className="flex justify-between">
                                         <span>
                                             {item.name} {item.quantity} x {item.price}
