@@ -14,11 +14,13 @@ type LaporanSearchParams = {
 export default async function LaporanPage({
   searchParams,
 }: {
-  searchParams?: LaporanSearchParams;
+  searchParams?: Promise<LaporanSearchParams>;
 }) {
+  const params = await searchParams;
+  console.log("LaporanPage searchParams:", params)
   const currentDate = new Date();
-  const month = Number(searchParams?.month) || currentDate.getMonth() + 1;
-  const year = Number(searchParams?.year) || currentDate.getFullYear();
+  const month = Number(params?.month) || currentDate.getMonth() + 1;
+  const year = Number(params?.year) || currentDate.getFullYear();
 
   const laporan = await fetchLaporan(month, year);
 
@@ -30,7 +32,6 @@ export default async function LaporanPage({
         </h1>
         <Filter month={month} year={year} />
       </div>
-
       <Ringkasan laporan={laporan} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <RevenueChart transaksi={laporan.transaksi} month={month} year={year} />

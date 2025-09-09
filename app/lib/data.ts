@@ -468,18 +468,38 @@ export async function getDetailTransaksi(id: string) {
 }
 
 //laporan
+// Tipe hasil query mentah (dari SQL, belum cocok 100% sama Transaksi)
+type DetailRow = {
+  dt_id: string;
+  produk_id: string;
+  transaksi_id: string;
+  nama_produk: string;
+  quantity: number;
+  subtotal: number;
+};
+
+type TransaksiRow = {
+  transaksi_id: string;
+  customer: string;
+  totalPrice: number;
+  pay: number;
+  back: number;
+  status: "pending" | "paid";
+  createdAt: string;   // dari DB masih string timestamp
+  details: DetailRow[];
+};
+
 export async function fetchLaporan(month: number, year: number) {
   try {
-    // Validasi input
     if (month < 1 || month > 12) {
-      throw new Error('Invalid month. Must be between 1 and 12.');
+      throw new Error("Invalid month. Must be between 1 and 12.");
     }
-    
     if (year < 1900 || year > 2100) {
-      throw new Error('Invalid year.');
+      throw new Error("Invalid year.");
     }
 
-    const result = await sql`
+    // Query dengan tipe generic
+    const result = await sql<TransaksiRow[]>`
       SELECT
         t.transaksi_id,
         t.customer,
@@ -507,12 +527,13 @@ export async function fetchLaporan(month: number, year: number) {
       WHERE 
         EXTRACT(MONTH FROM t.createdAt) = ${month}
         AND EXTRACT(YEAR FROM t.createdAt) = ${year}
-        AND t.status = 'paid'  -- Hanya transaksi yang sudah dibayar
+        AND t.status = 'paid'
       GROUP BY t.transaksi_id
       ORDER BY t.createdAt DESC
     `;
 
-    const transaksi: Transaksi[] = result.map((row: any) => ({
+    // Map ke tipe Transaksi yang sudah kamu buat
+    const transaksi: Transaksi[] = result.map((row) => ({
       transaksi_id: row.transaksi_id,
       dt_id: "",
       customer: row.customer,
@@ -521,52 +542,59 @@ export async function fetchLaporan(month: number, year: number) {
       back: Number(row.back || 0),
       status: row.status,
       createdAt: new Date(row.createdAt),
-      details: Array.isArray(row.details) ? row.details.map((d: any) => ({
-        dt_id: d.dt_id,
-        produk_id: d.produk_id,
-        transaksi_id: d.transaksi_id,
-        nama_produk: d.nama_produk,
-        quantity: d.quantity.toString(),
-        subtotal: Number(d.subtotal),
-        transaksi: {} as Transaksi,
-        produk: {} as Produk
-      })) : [],
+      details: Array.isArray(row.details)
+        ? row.details.map((d) => ({
+            dt_id: d.dt_id,
+            produk_id: d.produk_id,
+            transaksi_id: d.transaksi_id,
+            nama_produk: d.nama_produk,
+            quantity: d.quantity.toString(),
+            subtotal: Number(d.subtotal),
+            transaksi: {} as Transaksi,
+            produk: {} as Produk,
+          }))
+        : [],
     }));
 
-    // Hitung statistik
+    // Statistik
     const totalPendapatan = transaksi.reduce((sum, t) => sum + t.totalPrice, 0);
     const totalTransaksi = transaksi.length;
-    const rataRataPenjualan = totalTransaksi > 0 ? totalPendapatan / totalTransaksi : 0;
-    
-    // Hitung produk terlaris
-    const produkStats = new Map<string, { nama: string; quantity: number; revenue: number }>();
-    
-    transaksi.forEach(t => {
-      t.details.forEach(d => {
-        const existing = produkStats.get(d.produk_id) || { 
-          nama: d.nama_produk, 
-          quantity: 0, 
-          revenue: 0 
-        };
+    const rataRataPenjualan =
+      totalTransaksi > 0 ? totalPendapatan / totalTransaksi : 0;
+
+    // Produk terlaris
+    const produkStats = new Map<
+      string,
+      { nama: string; quantity: number; revenue: number }
+    >();
+
+    transaksi.forEach((t) => {
+      t.details.forEach((d) => {
+        const existing =
+          produkStats.get(d.produk_id) || {
+            nama: d.nama_produk,
+            quantity: 0,
+            revenue: 0,
+          };
         existing.quantity += Number(d.quantity);
         existing.revenue += d.subtotal;
         produkStats.set(d.produk_id, existing);
       });
     });
-    
+
     const produkTerlaris = Array.from(produkStats.values())
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
 
-    return { 
-      transaksi, 
-      totalPendapatan, 
+    return {
+      transaksi,
+      totalPendapatan,
       totalTransaksi,
       rataRataPenjualan,
-      produkTerlaris
+      produkTerlaris,
     };
   } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Gagal mengambil data laporan.');
+    console.error("Database Error:", error);
+    throw new Error("Gagal mengambil data laporan.");
   }
 }
