@@ -1,4 +1,5 @@
 import { Revenue } from './definitions';
+import clsx from 'clsx';
 
 export const formatCurrency = (amount: number) => {
   return amount.toLocaleString('id-ID', {
@@ -115,14 +116,6 @@ export function formatDate2(dateString: string) {
 }
 
 
-export function getStatusLabel(status: number): string {
-  switch (status) {
-    case 1: return "Aktif";
-    case 2: return "Nonaktif";
-    case 3: return "Discontinued";
-    default: return "Unknown";
-  }
-}
 
 type StatusConfig = {
   label: string;

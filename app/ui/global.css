@@ -20,6 +20,12 @@ html {
   scroll-behavior: smooth;
 }
 
+.select-none-arrow {
+  -webkit-appearance: none; /* Chrome, Safari, Opera */
+  -moz-appearance: none;    /* Firefox */
+  appearance: none;          /* default */
+  background-image: none;    /* hilangkan panah default */
+}
 
 
 @layer base {

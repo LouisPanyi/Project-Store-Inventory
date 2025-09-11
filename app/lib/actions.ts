@@ -139,12 +139,12 @@ export async function updateProduk(
   if (stock < 0) {
     throw new Error('Stok tidak boleh minus.');
   }
-
+  
   try {
     await sql`
       UPDATE produk
       SET name = ${name}, price = ${price}, stock = ${stock}, status = ${status}, updatedAt = NOW()
-      WHERE id = ${id};
+      WHERE produk_id = ${id};
     `;
     console.log("✅ Update sukses:", { id, name, price, stock, status });
   } catch {

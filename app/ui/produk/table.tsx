@@ -1,7 +1,7 @@
 import { UpdateProduk, StatusProduk } from '@/app/ui/produk/buttons';
 import { formatCurrency, formatDate } from '@/app/lib/utils';
 import { fetchFilteredProduk } from '@/app/lib/data';
-import { getStatusLabel } from '@/app/lib/utils';
+import { StatusBadge } from '@/app/ui/produk/status';
 
 export default async function produksTable({
     query,
@@ -88,7 +88,7 @@ export default async function produksTable({
                                         {produk.stock}
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-3">
-                                        {getStatusLabel(produk.status)}
+                                       <StatusBadge status={produk.status} />
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-3">
                                         {formatDate(produk.createdAt)}

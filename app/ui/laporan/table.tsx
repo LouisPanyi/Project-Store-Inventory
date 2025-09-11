@@ -22,6 +22,11 @@ export function Table({ transaksi }: TableProps) {
     setExpandedRows(newExpanded);
   };
 
+  // Ambil bulan dan tahun saat ini
+  const now = new Date();
+  const monthName = new Intl.DateTimeFormat("id-ID", { month: "long" }).format(now);
+  const year = now.getFullYear();
+
   if (transaksi.length === 0) {
     return (
       <div className="bg-white shadow rounded-lg p-8 text-center">
@@ -33,7 +38,9 @@ export function Table({ transaksi }: TableProps) {
   return (
     <div className="bg-white shadow-lg rounded-lg overflow-hidden">
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-800">Detail Transaksi</h2>
+        <h2 className="text-lg font-semibold text-gray-800">
+          Detail Transaksi Bulan {monthName} ({year})
+        </h2>
       </div>
 
       <div className="overflow-x-auto">
@@ -88,7 +95,7 @@ export function Table({ transaksi }: TableProps) {
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {t.status === "paid" ? "Lunas" : "Pending"}
+                      {t.status === "paid" ? "Paid" : "Pending"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">

@@ -90,16 +90,6 @@ export type Produk = {
   updatedAt: Date;
 };
 
-export type ProdukBaru = {
-  produk_id: string;
-  name: string;
-  price: number;
-  status: number;
-  image_url: string;
-  createdAt: Date;
-  produk: Produk;
-};
-
 export type Transaksi = {
   transaksi_id: string;
   dt_id: string;

@@ -13,45 +13,6 @@ import { formatCurrency } from './utils';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
-export async function fetchRevenue() {
-  try {
-    // Artificially delay a response for demo purposes.
-    // Don't do this in produkion :)
-
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const data = await sql<Revenue[]>`SELECT * FROM revenue`;
-
-    // console.log('Data fetch completed after 3 seconds.');
-
-    return data;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch revenue data.');
-  }
-}
-
-export async function fetchLatestInvoices() {
-  try {
-    const data = await sql<LatestInvoiceRaw[]>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`;
-
-    const latestInvoices = data.map((invoice) => ({
-      ...invoice,
-      amount: formatCurrency(invoice.amount),
-    }));
-    return latestInvoices;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch the latest invoices.');
-  }
-}
-
 export async function fetchCardData() {
   try {
     // You can probably combine these into a single SQL query
@@ -362,11 +323,11 @@ export async function fetchTransaksi() {
       SELECT 
         t.transaksi_id,
         t.customer,
-        t."totalPrice",
+        t.totalprice as "totalPrice",
         t.pay,
         t.back,
         t.status,
-        t."createdAt",
+        t.createdat as "createdAt",
         COALESCE(
           json_agg(
             json_build_object(
@@ -374,7 +335,7 @@ export async function fetchTransaksi() {
               'produk_id', dt.produk_id,
               'nama_produk', p.name,
               'quantity', dt.quantity,
-              'subTotal', (p.price * dt.quantity),
+              'subTotal', (p.price * dt.quantity)
             )
           ) FILTER (WHERE dt.dt_id IS NOT NULL), 
           '[]'
@@ -383,7 +344,7 @@ export async function fetchTransaksi() {
       LEFT JOIN detail_transaksi dt ON t.transaksi_id = dt.transaksi_id
       LEFT JOIN produk p ON dt.produk_id = p.produk_id
       GROUP BY t.transaksi_id
-      ORDER BY t."createdAt" DESC
+      ORDER BY t.createdAt DESC
     `;
     return data;
   } catch (error) {
@@ -597,4 +558,70 @@ export async function fetchLaporan(month: number, year: number) {
     console.error("Database Error:", error);
     throw new Error("Gagal mengambil data laporan.");
   }
+}
+
+export async function fetchDashboardData() {
+  // ambil semua produk dan transaksi
+  const produkList = await fetchTransaksiProduk();
+  const transaksiList = await fetchTransaksi();
+  
+  // produk
+  const totalProducts = produkList.filter((p) => p.status === 1).length;
+  const totalStock = produkList.reduce((sum, p) => sum + p.stock, 0);
+
+  // transaksi bulan ini
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const thisMonthTransactions = transaksiList.filter(
+    (t) => t.createdAt >= startOfMonth
+  );
+  const totalTransactions = thisMonthTransactions.length;
+  const totalRevenue = thisMonthTransactions.reduce(
+    (sum, t) => sum + t.totalPrice,
+    0
+  );
+
+  // penjualan 7 hari terakhir
+  const last7days = new Date();
+  last7days.setDate(last7days.getDate() - 6);
+
+  const sales = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split("T")[0];
+
+    const total = transaksiList
+      .filter((t) => t.createdAt.toISOString().split("T")[0] === dateStr)
+      .reduce((sum, t) => sum + t.totalPrice, 0);
+
+    return { date: dateStr, total };
+  });
+
+  // transaksi terbaru
+  const transactions = [...transaksiList]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 5)
+    .map((trx) => ({
+      id: trx.transaksi_id,
+      customer: trx.customer,
+      total: trx.totalPrice,
+      date: trx.createdAt.toISOString().split("T")[0],
+    }));
+
+  // stok rendah
+  const lowStock = produkList
+    .filter((p) => p.stock < 5 && p.status === 1)
+    .map((p) => ({
+      id: p.produk_id,
+      name: p.name,
+      stock: p.stock,
+    }));
+
+  return {
+    stats: { totalProducts, totalStock, totalTransactions, totalRevenue },
+    sales,
+    transactions,
+    lowStock,
+  };
 }
