@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { bulanNama } from './bulan';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { bulanNama } from "./bulan";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type FilterProps = {
   month: number;
@@ -18,9 +18,11 @@ export function Filter({ month, year }: FilterProps) {
 
   const handleChange = (newMonth: number, newYear: number) => {
     const query = new URLSearchParams(searchParams.toString());
-    query.set('month', newMonth.toString());
-    query.set('year', newYear.toString());
-    router.push(`/laporan?${query.toString()}`);
+    query.set("month", newMonth.toString());
+    query.set("year", newYear.toString());
+
+    // ✅ pastikan path sesuai lokasi laporan
+    router.push(`/dashboard/laporan?${query.toString()}`);
   };
 
   const selectClasses =

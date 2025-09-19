@@ -1,15 +1,21 @@
 import { formatCurrency, formatDate, getStatusTransaksi } from '@/app/lib/utils';
 import { fetchFilteredTransaksi } from '@/app/lib/data';
 import { DetailTransaksi } from './buttons';
+import SortableHeader from './sortableheader';
 
 export default async function TransaksiTable({
   query,
   currentPage,
+  searchParams
 }: {
   query: string;
   currentPage: number;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const transaksis = await fetchFilteredTransaksi(query, currentPage);
+  const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'createdAt';
+  const order = typeof searchParams?.order === 'string' ? searchParams.order : 'desc';
+
+  const transaksis = await fetchFilteredTransaksi(query, currentPage, sort, order);
 
   return (
     <div className="mt-6 flow-root">
@@ -36,12 +42,13 @@ export default async function TransaksiTable({
           <table className="hidden min-w-full text-gray-900 md:table">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6">Customer</th>
-                <th scope="col" className="px-3 py-5 font-medium">Total</th>
+                {/* <th scope="col" className="px-4 py-5 font-medium sm:pl-6">Employee</th> */}
+                <SortableHeader column="customer" label="Customer" />
+                <SortableHeader column="totalPrice" label="Total" />
                 <th scope="col" className="px-3 py-5 font-medium">Bayar</th>
                 <th scope="col" className="px-3 py-5 font-medium">Kembali</th>
-                <th scope="col" className="px-3 py-5 font-medium">Status</th>
-                <th scope="col" className="px-3 py-5 font-medium">Dibuat</th>
+                <SortableHeader column="status" label="Status" />
+                <SortableHeader column="createdAt" label="Dibuat" />
                 <th scope="col" className="relative py-3 pl-6 pr-3"><span className="sr-only">Action</span></th>
               </tr>
             </thead>
@@ -51,7 +58,8 @@ export default async function TransaksiTable({
                   key={t.transaksi_id}
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
-                  <td className="whitespace-nowrap py-3 pl-6 pr-3">{t.customer}</td>
+                  {/* <td className="whitespace-nowrap py-3 pl-6 pr-3">{t.employee}</td> */}
+                  <td className="whitespace-nowrap px-3 py-3">{t.customer}</td>
                   <td className="whitespace-nowrap px-3 py-3">{formatCurrency(t.totalPrice)}</td>
                   <td className="whitespace-nowrap px-3 py-3">{formatCurrency(t.pay)}</td>
                   <td className="whitespace-nowrap px-3 py-3">{formatCurrency(t.back)}</td>

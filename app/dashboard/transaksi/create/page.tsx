@@ -9,8 +9,15 @@ export default async function Page() {
     <main>
       <Breadcrumbs
         breadcrumbs={[
-          { label: 'Transaksi', href: '/dashboard/transaksi' },
-          { label: 'Tambah Transaksi', href: '/dashboard/transaksi/create', active: true },
+          {
+            label: 'Transaksi',
+            href: '/dashboard/transaksi'
+          },
+          {
+            label: 'Tambah Transaksi',
+            href: '/dashboard/transaksi/create',
+            active: true
+          },
         ]}
       />
       <Form produkList={produkList} />

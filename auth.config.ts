@@ -18,4 +18,11 @@ export const authConfig = {
     },
   },
   providers: [], // Add providers with an empty array for now
+
+  // Konfigurasi sesi
+  session: {
+    strategy: 'jwt',
+    // Atur masa berlaku sesi menjadi 30 menit (dalam detik)
+    maxAge: 30 * 60, // 30 menit * 60 detik
+  },
 } satisfies NextAuthConfig;

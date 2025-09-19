@@ -1,6 +1,4 @@
-import { Revenue } from './definitions';
-import clsx from 'clsx';
-
+// Utility functions for formatting currency, dates, and generating pagination
 export const formatCurrency = (amount: number) => {
   return amount.toLocaleString('id-ID', {
     style: 'currency',
@@ -20,20 +18,6 @@ export const formatDateToLocal = (
   };
   const formatter = new Intl.DateTimeFormat(locale, options);
   return formatter.format(date);
-};
-
-export const generateYAxis = (revenue: Revenue[]) => {
-  // Calculate what labels we need to display on the y-axis
-  // based on highest record and in 1000s
-  const yAxisLabels = [];
-  const highestRecord = Math.max(...revenue.map((month) => month.revenue));
-  const topLabel = Math.ceil(highestRecord / 1000) * 1000;
-
-  for (let i = topLabel; i >= 0; i -= 1000) {
-    yAxisLabels.push(`$${i / 1000}K`);
-  }
-
-  return { yAxisLabels, topLabel };
 };
 
 export const generatePagination = (currentPage: number, totalPages: number) => {
@@ -97,26 +81,6 @@ export function formatDate(date: Date | string | null | undefined) {
   });
 }
 
-
-
-// app/lib/utils.ts
-export function formatDate2(dateString: string) {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-
-  // Format: 2023-08-02 08:46:36 → 02/08/2023 08:46:36
-  return date.toLocaleString("id-ID", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-
-
 type StatusConfig = {
   label: string;
   className: string;
@@ -129,9 +93,8 @@ export function getStatusTransaksi(status: string | number): StatusConfig {
 
   const mapping: Record<string, StatusConfig> = {
     paid: { label: "Paid", className: "bg-green-100 text-green-800" },
-    unpaid: { label: "Unpaid", className: "bg-red-100 text-red-800" },
     pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
-    cancelled: { label: "Cancelled", className: "bg-gray-100 text-gray-800" },
+    canceled: { label: "Cancelled", className: "bg-red-100 text-red-800" },
   };
 
   return (

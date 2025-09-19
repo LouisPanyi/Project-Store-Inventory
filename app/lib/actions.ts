@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { coreApi } from './midtrans';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -22,15 +23,13 @@ const UpdateProduk = z.object({
   status: z.coerce.number().int().min(1).max(3), // 1 = Aktif, 2 = Nonaktif, 3 = Discontinued
 });
 
-const ProdukEntrySchema = z.object({
-  produkId: z.string().min(1, "Produk wajib dipilih."),
-  quantity: z.number().min(1, "Jumlah minimal 1."),
-});
-
 const TransaksiSchema = z.object({
-  customer: z.string().min(1, "Nama customer wajib diisi."),
-  pay: z.number().min(0, "Nominal pembayaran wajib diisi."),
-  produkEntries: z.array(ProdukEntrySchema).min(1, "Minimal pilih 1 produk."),
+  customer: z.string().min(1, 'Nama customer tidak boleh kosong'),
+  pay: z.number(),
+  produkEntries: z.array(z.object({
+    produkId: z.string().min(1, 'Produk harus dipilih'),
+    quantity: z.number().min(1, 'Jumlah minimal 1'),
+  })).min(1, 'Minimal ada satu produk dalam transaksi'),
 });
 
 export async function authenticate(
@@ -43,15 +42,14 @@ export async function authenticate(
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          return 'Invalid credentials.';
+          return 'Kredensial tidak cocok.';
         default:
-          return 'Something went wrong.';
+          return 'Terjadi kesalahan.';
       }
     }
     throw error;
   }
 }
-
 export type State = {
   errors?: {
     customerId?: string[];
@@ -74,6 +72,7 @@ export type StateProduk = {
 export type StateTransaksi = {
   message: string | null;
   success?: boolean;
+  transaksiId?: string;
   errors?: {
     customer?: string[];
     product_Id?: string[];
@@ -82,8 +81,8 @@ export type StateTransaksi = {
     back?: string[];
     status?: string[];
   };
-};
 
+};
 
 // Tambah produk baru
 export async function createProduk(prevState: StateProduk, formData: FormData): Promise<StateProduk> {
@@ -139,7 +138,7 @@ export async function updateProduk(
   if (stock < 0) {
     throw new Error('Stok tidak boleh minus.');
   }
-  
+
   try {
     await sql`
       UPDATE produk
@@ -154,7 +153,6 @@ export async function updateProduk(
   revalidatePath('/dashboard/produk');
   redirect('/dashboard/produk');
 }
-
 
 // Nonaktifkan produk
 export async function statusProduk(id: string) {
@@ -184,15 +182,22 @@ export async function statusProduk(id: string) {
   }
 }
 
+interface MidtransAction {
+  name: string;
+  method: string;
+  url: string;
+}
+
 // Tambah transaksi
 export async function createTransaksi(
   state: StateTransaksi,
   formData: FormData
 ): Promise<StateTransaksi> {
-  // Ambil data dari form
   const customer = formData.get("customer") as string;
   const pay = parseFloat(formData.get("pay") as string) || 0;
+  const paymentMethod = formData.get("payment_method") as string; // cash / qris
 
+  // ambil produk & quantity dari form
   const produkEntries = [...formData.entries()]
     .filter(([key]) => key.startsWith("produk_id_"))
     .map(([key, val]) => ({
@@ -200,7 +205,7 @@ export async function createTransaksi(
       quantity: Number(formData.get(key.replace("produk_id", "quantity")) || 1),
     }));
 
-  // Validasi pakai Zod
+  // validasi input
   const validatedFields = TransaksiSchema.safeParse({
     customer,
     pay,
@@ -219,17 +224,20 @@ export async function createTransaksi(
     validatedFields.data;
 
   try {
-    await sql.begin(async (tx) => {
-      let total = 0;
+    let transaksi_id: string = "";
+    let total = 0;
+    let qrisUrl: string | null = null;
 
-      // Hitung total & cek stok
+    await sql.begin(async (tx) => {
+      // hitung total harga
       for (const { produkId, quantity } of validProduk) {
-        const [produk] = await tx`
+        const produkResult = await tx`
           SELECT produk_id, price, stock
           FROM produk
           WHERE produk_id = ${produkId} AND status = 1
           FOR UPDATE
         `;
+        const produk = produkResult[0];
         if (!produk)
           throw new Error(`Produk dengan ID ${produkId} tidak ditemukan`);
         if (produk.stock < quantity)
@@ -237,50 +245,93 @@ export async function createTransaksi(
         total += Number(produk.price) * quantity;
       }
 
-      if (payAmount < total) {
-        throw new Error("Pembayaran kurang dari total harga");
+      let status: "pending" | "paid" = "pending";
+      let back = 0;
+
+      if (paymentMethod === "cash") {
+        if (payAmount < total)
+          throw new Error("Pembayaran kurang dari total harga");
+        status = "paid";
+        back = payAmount - total;
       }
 
-      const back = payAmount - total;
-      const status = payAmount >= total ? "paid" : "pending";
-
-      // Simpan transaksi
-      const [trx] = await tx`
-        INSERT INTO transaksi (customer, totalPrice, pay, back, status)
-        VALUES (${cust}, ${total}, ${payAmount}, ${back}, ${status})
+      // simpan transaksi awal
+      const trxResult = await tx`
+        INSERT INTO transaksi (customer, totalPrice, pay, back, status, payment_method, qris_url)
+        VALUES (${cust}, ${total}, ${payAmount}, ${back}, ${status}, ${paymentMethod}, ${qrisUrl})
         RETURNING transaksi_id
       `;
+      transaksi_id = trxResult[0].transaksi_id;
 
-      // Simpan detail transaksi
+      // simpan detail transaksi
       for (const { produkId, quantity } of validProduk) {
-        const [produk] = await tx`
+        const produkResult = await tx`
           SELECT price FROM produk WHERE produk_id = ${produkId}
         `;
+        const produk = produkResult[0];
         const subTotal = Number(produk.price) * quantity;
 
         await tx`
           INSERT INTO detail_transaksi (transaksi_id, produk_id, quantity, subtotal)
-          VALUES (${trx.transaksi_id}, ${produkId}, ${quantity}, ${subTotal})
+          VALUES (${transaksi_id}, ${produkId}, ${quantity}, ${subTotal})
         `;
+      }
 
-        await tx`
-          UPDATE produk SET stock = stock - ${quantity} WHERE produk_id = ${produkId}
-        `;
+      // kalau cash → langsung kurangi stok
+      if (paymentMethod === "cash") {
+        for (const { produkId, quantity } of validProduk) {
+          await tx`
+            UPDATE produk SET stock = stock - ${quantity} WHERE produk_id = ${produkId}
+          `;
+        }
       }
     });
 
+    // kalau QRIS → generate link pakai CoreAPI
+    if (paymentMethod === "qris") {
+      const parameter = {
+        payment_type: "qris",
+        transaction_details: {
+          order_id: transaksi_id,
+          gross_amount: total,
+        },
+        qris: {
+          acquirer: "gopay", // atau "bca", "cimb", dll
+        },
+      };
+
+      const qrisTransaction = await coreApi.charge(parameter);
+
+      // Gunakan tipe MidtransAction, bukan 'any'
+      qrisUrl =
+        qrisTransaction.actions?.find(
+          (a: MidtransAction) => a.name === "generate-qr-code"
+        )?.url || null;
+
+      // update transaksi dengan qris_url
+      await sql`
+        UPDATE transaksi SET qris_url = ${qrisUrl} WHERE transaksi_id = ${transaksi_id}
+      `;
+    }
+
     revalidatePath("/dashboard/transaksi");
 
-    return { message: "Transaksi berhasil dibuat", success: true, errors: {} };
-  } catch {
+    return {
+      message: "Transaksi berhasil dibuat",
+      success: true,
+      errors: {},
+      transaksiId: transaksi_id,
+    } as StateTransaksi & { transaksiId?: string };
+  } catch (err) {
+    const error = err as Error;
+    console.error(error.message);
     return {
       message: null,
       success: false,
-      errors: { status: ["Gagal membuat transaksi"] },
+      errors: { status: ["Gagal membuat transaksi: " + error.message] },
     };
   }
 }
-
 
 // Hapus transaksi 
 export async function deleteTransaksi(id: string) {

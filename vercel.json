@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "api/transaksi/expire",
+      "schedule": "* * * * *"
+    }
+  ]
+}

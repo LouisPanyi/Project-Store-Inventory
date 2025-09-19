@@ -1,185 +1,12 @@
 import postgres from 'postgres';
 import {
-  CustomerField,
-  CustomersTableType,
-  InvoiceForm,
-  InvoicesTable,
-  LatestInvoiceRaw,
-  Revenue,
   Produk,
   Transaksi,
 } from './definitions';
-import { formatCurrency } from './utils';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
-export async function fetchCardData() {
-  try {
-    // You can probably combine these into a single SQL query
-    // However, we are intentionally splitting them to demonstrate
-    // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
-
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
-
-    const numberOfInvoices = Number(data[0][0].count ?? '0');
-    const numberOfCustomers = Number(data[1][0].count ?? '0');
-    const totalPaidInvoices = formatCurrency(data[2][0].paid ?? '0');
-    const totalPendingInvoices = formatCurrency(data[2][0].pending ?? '0');
-
-    return {
-      numberOfCustomers,
-      numberOfInvoices,
-      totalPaidInvoices,
-      totalPendingInvoices,
-    };
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch card data.');
-  }
-}
-
 const ITEMS_PER_PAGE = 6;
-export async function fetchFilteredInvoices(
-  query: string,
-  currentPage: number,
-) {
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  try {
-    const invoices = await sql<InvoicesTable[]>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
-
-    return invoices;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoices.');
-  }
-}
-
-export async function fetchInvoicesPages(query: string) {
-  try {
-    const data = await sql`SELECT COUNT(*)
-    FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
-    WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
-      invoices.amount::text ILIKE ${`%${query}%`} OR
-      invoices.date::text ILIKE ${`%${query}%`} OR
-      invoices.status ILIKE ${`%${query}%`}
-  `;
-
-    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
-    return totalPages;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch total number of invoices.');
-  }
-}
-
-export async function fetchInvoiceById(id: string) {
-  try {
-    const data = await sql<InvoiceForm[]>`
-      SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
-    `;
-
-    const invoice = data.map((invoice) => ({
-      ...invoice,
-      // Convert amount from cents to dollars
-      amount: invoice.amount / 100,
-    }));
-
-    return invoice[0];
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoice.');
-  }
-}
-
-export async function fetchCustomers() {
-  try {
-    const customers = await sql<CustomerField[]>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
-
-    return customers;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch all customers.');
-  }
-}
-
-export async function fetchFilteredCustomers(query: string) {
-  try {
-    const data = await sql<CustomersTableType[]>`
-		SELECT
-		  customers.id,
-		  customers.name,
-		  customers.email,
-		  customers.image_url,
-		  COUNT(invoices.id) AS total_invoices,
-		  SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
-		  SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
-		FROM customers
-		LEFT JOIN invoices ON customers.id = invoices.customer_id
-		WHERE
-		  customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`}
-		GROUP BY customers.id, customers.name, customers.email, customers.image_url
-		ORDER BY customers.name ASC
-	  `;
-
-    const customers = data.map((customer) => ({
-      ...customer,
-      total_pending: formatCurrency(customer.total_pending),
-      total_paid: formatCurrency(customer.total_paid),
-    }));
-
-    return customers;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch customer table.');
-  }
-}
-
 //produk
 export async function fetchProduk() {
   try {
@@ -353,14 +180,25 @@ export async function fetchTransaksi() {
   }
 }
 
-
 export async function fetchFilteredTransaksi(
   query: string,
   currentPage: number,
+  sortBy: string = 'createdAt', 
+  orderBy: string = 'desc'
 ) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
+  // Daftar kolom yang valid untuk diurutkan (keamanan)
+  const validSortColumns = ['customer', 'totalPrice', 'status', 'createdAt'];
+  const validOrderValues = ['asc', 'desc'];
+
+  // Validasi input
+  const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'createdAt';
+  const sortOrder = validOrderValues.includes(orderBy) ? orderBy : 'desc';
+
   try {
+    // Perhatikan bahwa kita menggunakan sql.unsafe() untuk ORDER BY dinamis.
+    // Ini aman karena kita sudah memvalidasi input di atas.
     const transactions = await sql<Transaksi[]>`
       SELECT
         transaksi_id,
@@ -372,11 +210,11 @@ export async function fetchFilteredTransaksi(
         createdat AS "createdAt"
       FROM transaksi
       WHERE
-          customer ILIKE ${`%${query}%`} OR
-          status ILIKE ${`%${query}%`} OR
-          createdat::text ILIKE ${`%${query}%`} OR
-          totalprice::text ILIKE ${`%${query}%`}
-      ORDER BY createdat DESC
+        customer ILIKE ${`%${query}%`} OR
+        status ILIKE ${`%${query}%`} OR
+        createdat::text ILIKE ${`%${query}%`} OR
+        totalprice::text ILIKE ${`%${query}%`}
+      ORDER BY ${sql(sortColumn)} ${sql.unsafe(sortOrder)} -- <-- PERUBAHAN DI SINI
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
     `;
 
@@ -429,7 +267,6 @@ export async function getDetailTransaksi(id: string) {
 }
 
 //laporan
-// Tipe hasil query mentah (dari SQL, belum cocok 100% sama Transaksi)
 type DetailRow = {
   dt_id: string;
   produk_id: string;
@@ -446,7 +283,7 @@ type TransaksiRow = {
   pay: number;
   back: number;
   status: "pending" | "paid";
-  createdAt: string;   // dari DB masih string timestamp
+  createdAt: string;  
   details: DetailRow[];
 };
 
@@ -502,6 +339,8 @@ export async function fetchLaporan(month: number, year: number) {
       pay: Number(row.pay || 0),
       back: Number(row.back || 0),
       status: row.status,
+      qris_url: "",
+      payment_method: "",
       createdAt: new Date(row.createdAt),
       details: Array.isArray(row.details)
         ? row.details.map((d) => ({
@@ -561,10 +400,12 @@ export async function fetchLaporan(month: number, year: number) {
 }
 
 export async function fetchDashboardData() {
-  // ambil semua produk dan transaksi
   const produkList = await fetchTransaksiProduk();
   const transaksiList = await fetchTransaksi();
-  
+
+  // ✅ filter hanya transaksi paid
+  const paidTransactions = transaksiList.filter((t) => t.status === "paid");
+
   // produk
   const totalProducts = produkList.filter((p) => p.status === 1).length;
   const totalStock = produkList.reduce((sum, p) => sum + p.stock, 0);
@@ -573,7 +414,7 @@ export async function fetchDashboardData() {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const thisMonthTransactions = transaksiList.filter(
+  const thisMonthTransactions = paidTransactions.filter(
     (t) => t.createdAt >= startOfMonth
   );
   const totalTransactions = thisMonthTransactions.length;
@@ -591,7 +432,7 @@ export async function fetchDashboardData() {
     d.setDate(d.getDate() - (6 - i));
     const dateStr = d.toISOString().split("T")[0];
 
-    const total = transaksiList
+    const total = paidTransactions
       .filter((t) => t.createdAt.toISOString().split("T")[0] === dateStr)
       .reduce((sum, t) => sum + t.totalPrice, 0);
 
@@ -599,7 +440,7 @@ export async function fetchDashboardData() {
   });
 
   // transaksi terbaru
-  const transactions = [...transaksiList]
+  const transactions = [...paidTransactions]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 5)
     .map((trx) => ({
@@ -625,3 +466,4 @@ export async function fetchDashboardData() {
     lowStock,
   };
 }
+

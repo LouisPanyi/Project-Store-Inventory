@@ -31,14 +31,14 @@ export default function LoginFormGoldWhite() {
         </p>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="email">Email</label>
+          <label className="mb-2 block text-sm font-medium text-gray-700" htmlFor="email">Nama atau Email</label>
           <div className="relative">
             <input
               className="peer block w-full rounded-md border border-yellow-300 py-2 pl-10 text-sm outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-yellow-500"
-              id="email"
-              type="email"
-              name="email"
-              placeholder="Enter admin email"
+              id="identifier"
+              type="text"
+              name="identifier"
+              placeholder="Masukkan Nama atau Email Anda"
               required
             />
             <AtSymbolIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-yellow-500 peer-focus:text-yellow-600" />
